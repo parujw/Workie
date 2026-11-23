@@ -287,9 +287,13 @@ textarea.out{min-height:240px;background:var(--card);font-size:15px}
 .sw[aria-pressed="true"]{border-color:var(--bg);box-shadow:0 0 0 2px var(--ink)}
 
 /* Putter Help: HUD chat (always dark by design), same build as Dusit Help */
-.nav-btn.help{color:var(--brand-hi)}
-.nav-reactor{width:30px;height:30px;display:block}
-.nav-reactor .reactor{width:30px;height:30px;filter:drop-shadow(0 0 6px rgba(143,220,182,.6))}
+.nav-btn.help{color:var(--brand-hi);font-size:12.5px;gap:3px;padding:0;justify-self:center}
+.nav-btn.help.on::after{display:none}
+.nav-reactor{width:60px;height:60px;margin-top:-24px;border-radius:50%;display:grid;place-items:center;border:5px solid var(--bg);
+  background:radial-gradient(circle at 50% 40%,#0d3a3a,var(--hud-bg) 72%);box-shadow:0 0 0 1.5px rgba(143,220,182,.55),0 0 18px rgba(143,220,182,.45),0 8px 20px rgba(0,0,0,.3);transition:transform .15s}
+.nav-btn.help:active .nav-reactor{transform:scale(.94)}
+.nav-btn.help.on .nav-reactor{box-shadow:0 0 0 2.5px var(--brand-hi),0 0 24px rgba(143,220,182,.7),0 8px 20px rgba(0,0,0,.3)}
+.nav-reactor .reactor{width:42px;height:42px;filter:drop-shadow(0 0 6px rgba(143,220,182,.6))}
 .reactor{width:64px;height:64px;flex:none;filter:drop-shadow(0 0 10px rgba(143,220,182,.5))}
 .reactor svg{width:100%;height:100%;overflow:visible}
 .reactor .r-ring{transform-origin:60px 60px;transform-box:view-box;animation:rspin 14s linear infinite}
