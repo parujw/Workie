@@ -1527,7 +1527,43 @@ function findTasks(text, pool) {
 }
 const listReply = (head, ts) => !ts.length ? `${head}: ไม่มีครับ` :
   `${head} ${ts.length} งาน\n` + ts.slice(0, 10).map((t) => `• ${t.title}${t.owner ? " — " + t.owner : ""}${t.due ? " · " + dueText(t) : ""}`).join("\n") + (ts.length > 10 ? `\nและอีก ${ts.length - 10} งาน` : "");
+// A task waiting for its project (basic mode asks "which project?" and keeps the task until answered).
+let pendingAdd = null;
+const PROJ_CMD = /^\s*(?:ช่วย)?(?:สร้าง|เพิ่ม|เปิด|ตั้ง)\s*โครงการ(?:ใหม่)?\s*(?:ชื่อ)?\s*[:：]?\s*(.+?)\s*(?:ครับ|ค่ะ|นะ|ให้หน่อย)?\s*$/;
+/** A project name in a sentence like "FDA 2026" or "งาน Good Growth": the first run of Latin words/numbers. */
+const guessProjectName = (t) => (String(t).match(/[A-Z][A-Za-z0-9&.\-]*(?:\s+[A-Za-z0-9][A-Za-z0-9&.\-]*)*/) || [""])[0].trim();
+const findProject = (name) => S.projects.find((p) => p.name.toLowerCase() === String(name).trim().toLowerCase());
+function newProjectActions(name, blank) {
+  const acts = [{ ...blank, type: "add_project", project: name }];
+  if (pendingAdd) acts.push({ ...blank, ...pendingAdd, type: "add", project: name });
+  const had = pendingAdd; pendingAdd = null;
+  return { reply: had ? `สร้างโครงการ ${name} และเพิ่มงานให้แล้วครับ` : `สร้างโครงการ ${name} แล้วครับ`, actions: acts };
+}
 function localHelp(text) {
+  const blank0 = { id: "", project: "", title: "", status: "", owner: "", due: "", time: "", detail: "", update: "" };
+  // "สร้างโครงการ FDA 2026"
+  const cmd = text.match(PROJ_CMD);
+  if (cmd && cmd[1].length <= 80) {
+    const name = cmd[1].replace(/^["'“]|["'”]$/g, "").trim();
+    const ex = findProject(name);
+    if (ex) {
+      if (pendingAdd) { const a = { ...blank0, ...pendingAdd, type: "add", project: ex.id }; pendingAdd = null; return { reply: `มีโครงการ ${ex.name} อยู่แล้ว เพิ่มงานไว้ในนั้นให้แล้วครับ`, actions: [a] }; }
+      return { reply: `มีโครงการ ${ex.name} อยู่แล้วครับ`, actions: [] };
+    }
+    return newProjectActions(name, blank0);
+  }
+  // Answering "which project?" for the task we are holding
+  if (pendingAdd) {
+    if (/^\s*(ยกเลิก|ไม่เอา|ช่างมัน)/.test(text)) { pendingAdd = null; return { reply: "ยกเลิกแล้วครับ", actions: [] }; }
+    const ex = S.projects.find((p) => text.toLowerCase().includes(p.name.toLowerCase()));
+    if (ex) { const a = { ...blank0, ...pendingAdd, type: "add", project: ex.id }; pendingAdd = null; return { reply: `เพิ่มใน ${ex.name} แล้วครับ`, actions: [a] }; }
+    if (/^\s*(เพิ่มเลย|ได้เลย|ใช่|โอเค|ok|สร้างเลย|เอาเลย)/i.test(text)) {
+      if (pendingAdd.guess) return newProjectActions(pendingAdd.guess, blank0);
+      return { reply: "พิมพ์ชื่อโครงการมาได้เลยครับ ถ้ายังไม่มี ผมสร้างให้", actions: [] };
+    }
+    const name = text.replace(/^\s*(อันนี้|นี่|มัน)?\s*(คือ|เป็น)?\s*(ชื่อ)?\s*(โครงการ|โปรเจกต์|project)?\s*(ชื่อ)?\s*[:：]?\s*/i, "").replace(/\s*(ครับ|ค่ะ|นะ)\s*$/, "").trim();
+    if (name.length >= 2 && name.length <= 60 && !/[?？]/.test(name)) return newProjectActions(name, blank0);
+  }
   const inProj = view === "project" ? curP : "";
   const mentioned = S.projects.find((p) => text.toLowerCase().includes(p.name.toLowerCase()) || (p.name.length > 6 && text.toLowerCase().includes(p.name.toLowerCase().split(" ").pop())));
   const pid = mentioned?.id || inProj;
@@ -1561,12 +1597,21 @@ function localHelp(text) {
   const hits = findTasks(text, pool);
   if (status && hits.length === 1) return { reply: `อัปเดตแล้วครับ`, actions: [{ ...blank, type: "update", id: hits[0].id, status }] };
   if (status && hits.length > 1) return { reply: `เจอหลายงานที่ตรงกันครับ บอกชื่องานให้ชัดขึ้นหน่อย\n` + hits.slice(0, 5).map((t) => "• " + t.title).join("\n"), actions: [] };
-  const p = pid || (S.projects.length === 1 ? S.projects[0].id : "");
-  if (!p) return { reply: "จะเพิ่มงานในโครงการไหนครับ เปิดหน้าโครงการก่อน หรือพูดชื่อโครงการมาด้วย", actions: [] };
   const who = personIn(text), when = parseWhen(text);
-  const title = text.replace(/^\s*(เพิ่มงาน|จดไว้|จด|งาน)\s*[:：]?\s*/, "").trim().slice(0, 200);
+  const title = text.replace(/^\s*(เพิ่มงาน|จดไว้|จด|งาน)\s*[:：]?\s*/, "")
+    .replace(/\s*(ภายใน|ก่อน)?\s*(วันนี้|พรุ่งนี้|มะรืน(นี้)?)\s*(นะ|ครับ)?\s*$/, "").trim().slice(0, 200);
   if (title.length < 3) return { reply: "ยังไม่เข้าใจครับ ลองพิมพ์ชื่องาน หรือถามว่า \"มีอะไรค้างบ้าง\"", actions: [] };
-  return { reply: "จดไว้แล้วครับ", actions: [{ ...blank, type: "add", project: p, title, status: /รอ/.test(text) ? "waiting" : /เสนอ/.test(text) ? "proposal" : "todo", owner: who?.full || "", due: when.due || "", time: when.time || "" }] };
+  const draft = { title, status: /รอ/.test(text) ? "waiting" : /เสนอ/.test(text) ? "proposal" : "todo", owner: who?.full || "", due: when.due || "", time: when.time || "" };
+  const p = pid || (S.projects.length === 1 ? S.projects[0].id : "");
+  if (!p) {
+    const guess = guessProjectName(title);
+    pendingAdd = { ...draft, guess: guess && !findProject(guess) ? guess : "" };
+    const names = S.projects.filter((x) => !x.archived).map((x) => x.name);
+    return { reply: `จะเพิ่ม "${title}" ในโครงการไหนครับ` +
+      (names.length ? `\nมีอยู่แล้ว: ${names.join(", ")}` : "") +
+      (pendingAdd.guess ? `\nหรือพิมพ์ "เพิ่มเลย" เพื่อสร้างโครงการ ${pendingAdd.guess}` : `\nหรือพิมพ์ชื่อโครงการใหม่ ผมสร้างให้`), actions: [] };
+  }
+  return { reply: "จดไว้แล้วครับ", actions: [{ ...blank, ...draft, type: "add", project: p }] };
 }
 
 /* ---------- events ---------- */
