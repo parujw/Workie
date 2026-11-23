@@ -387,6 +387,60 @@ textarea.out{min-height:240px;background:var(--card);font-size:15px}
 .sheet.hud button:focus-visible,.sheet.hud textarea:focus-visible{outline-color:var(--hud-cyan)}
 @media (prefers-reduced-motion:reduce){.reactor *,.hud-dot,.scan i{animation:none!important}}
 @media (max-width:380px){.top h1{font-size:26px}.seg button{font-size:14px}}
+/* ---------- desktop: rail nav on the left, two columns, dialogs in the middle, Putter Help as a side panel ---------- */
+@media (min-width:1024px){
+  body{font-size:15.5px}
+  .wrap{max-width:1240px;padding:32px 40px 64px 148px}
+  .top h1{font-size:36px}
+  /* nav becomes a vertical rail */
+  .nav{top:0;bottom:0;right:auto;width:124px;padding:20px 0 20px 20px;display:flex}
+  .nav-in{height:auto;width:96px;margin:auto 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;padding:30px 0;border-radius:48px}
+  .nav-btn{font-size:13.5px}
+  .nav-btn.on::after{bottom:auto;left:-10px;top:50%;width:3px;height:22px;transform:translateY(-50%)}
+  .fab{margin:0;width:70px;height:70px;border-width:0;box-shadow:inset 0 2px 0 rgba(255,255,255,.45),0 8px 22px rgba(47,158,116,.35)}
+  .nav-reactor{margin-top:0;border-width:0}
+  /* home: projects on the left, due soon on the right */
+  #v-home:not([hidden]){display:grid;grid-template-columns:minmax(0,1fr) 380px;grid-template-rows:auto auto auto 1fr;column-gap:28px;align-items:start}
+  #v-home>.top,#v-home>.hero{grid-column:1/-1}
+  #v-home>.sec-h{grid-column:1;grid-row:3}
+  #projectList{grid-column:1;grid-row:4;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  #dueWrap{grid-column:2;grid-row:3/span 2;position:sticky;top:24px}
+  .hero{padding:24px 26px 22px}
+  .hero .big{font-size:26px}
+  .pcard{padding:18px 20px;min-height:100%;display:flex;flex-direction:column;justify-content:flex-start}
+  /* project: tasks / timeline on the left; actions and notes stay visible on the right */
+  #v-project:not([hidden]){display:grid;grid-template-columns:minmax(0,1fr) 360px;column-gap:28px;align-items:start}
+  #v-project>*{grid-column:1}
+  #v-project>.pside{grid-column:2;grid-row:1/span 40;position:sticky;top:24px;display:flex;flex-direction:column;gap:14px}
+  .pmode{max-width:360px}
+  .actbar{position:static;padding:0;pointer-events:auto}
+  .actbar-in{box-shadow:var(--shadow);padding:14px}
+  .actbar .row{flex-wrap:wrap}
+  .pside .notes{margin-top:0}
+  .pside .notes textarea{min-height:240px}
+  .filters{margin:0 0 12px;padding:2px 0;flex-wrap:wrap;overflow:visible}
+  .task{padding:14px 18px 14px 12px}
+  .task:hover,.duecard:hover{border-color:color-mix(in srgb,var(--brand) 55%,var(--line))}
+  .tlast{-webkit-line-clamp:3}
+  .ms-in{height:184px}
+  /* settings in two columns */
+  #v-settings .list{display:block;columns:2;column-gap:16px}
+  #v-settings .list>.box{break-inside:avoid;margin-bottom:16px}
+  #profile{min-height:320px}
+  /* sheets open as centred dialogs */
+  .sheet{left:0;right:0;margin:0 auto;top:5vh;bottom:auto;width:min(720px,calc(100vw - 180px));max-height:90vh;border-radius:28px;padding:8px 28px 28px;box-shadow:0 30px 80px rgba(0,0,0,.3);animation:pop .2s ease-out}
+  @keyframes pop{from{transform:translateY(14px) scale(.98);opacity:.4}}
+  .grab{visibility:hidden}
+  /* Putter Help slides in from the right */
+  .sheet.hud{top:0;bottom:0;right:0;left:auto;margin:0;width:480px;max-height:none;height:100%;border-radius:28px 0 0 28px;animation:side .22s ease-out}
+  @keyframes side{from{transform:translateX(40px);opacity:.4}}
+  .dock{bottom:-28px;margin-bottom:-28px;padding-bottom:28px}
+  .toast{bottom:32px;left:calc(50% + 62px)}
+}
+@media (min-width:1024px) and (max-width:1180px){
+  #v-home:not([hidden]){grid-template-columns:minmax(0,1fr) 320px}
+  #v-project:not([hidden]){grid-template-columns:minmax(0,1fr) 320px}
+}
 </style>
 </head>
 <body>
@@ -421,6 +475,16 @@ textarea.out{min-height:240px;background:var(--card);font-size:15px}
     <div class="list" id="taskList"></div>
     <details class="fold" id="doneFold" hidden><summary id="doneSum"></summary><div class="list" id="doneList"></div></details>
 
+    <aside class="pside">
+    <div class="actbar" id="actbar" hidden>
+      <div class="actbar-in">
+        <div class="what"><span id="actWhat"></span><button id="actClear" hidden>ยกเลิกที่เลือก</button></div>
+        <div class="row">
+          <button class="btn dark" id="doSummary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h8M4 6h.01M4 12h.01M4 18h.01"/></svg>สรุปงาน</button>
+          <button class="btn line" id="doLine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.6A8 8 0 1 1 21 12z"/></svg>ร่าง LINE</button>
+        </div>
+      </div>
+    </div>
     <div class="notes">
       <div class="notes-h"><h2>โน้ตประชุม / ข้อความจากแชต</h2><span class="note num" id="notesCount"></span></div>
       <textarea id="notes" placeholder="วางโน้ตประชุม หรือข้อความจาก LINE/อีเมลที่นี่ ใส่ได้หลายรอบ ระบบจะยึดข้อสรุปล่าสุด"></textarea>
@@ -429,6 +493,7 @@ textarea.out{min-height:240px;background:var(--card);font-size:15px}
         <button class="btn sec sm" id="clearNotes">ล้างโน้ต</button>
       </div>
     </div>
+    </aside>
   </section>
 
   <!-- SETTINGS -->
@@ -461,16 +526,6 @@ textarea.out{min-height:240px;background:var(--card);font-size:15px}
       </div>
     </div>
   </section>
-</div>
-
-<div class="actbar" id="actbar" hidden>
-  <div class="actbar-in">
-    <div class="what"><span id="actWhat"></span><button id="actClear" hidden>ยกเลิกที่เลือก</button></div>
-    <div class="row">
-      <button class="btn dark" id="doSummary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h8M4 6h.01M4 12h.01M4 18h.01"/></svg>สรุปงาน</button>
-      <button class="btn line" id="doLine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.6A8 8 0 1 1 21 12z"/></svg>ร่าง LINE</button>
-    </div>
-  </div>
 </div>
 
 <nav class="nav" aria-label="เมนูหลัก">
@@ -702,7 +757,7 @@ function milestoneHTML(tasks) {
   let start = [t0, pts[0].due].sort()[0], end = [t0, pts[pts.length - 1].due].sort()[1];
   start = addDays(start, -3); end = addDays(end, 4);
   const span = Math.max(14, daysFrom(end) - daysFrom(start));
-  const avail = Math.max(280, (document.querySelector(".wrap")?.clientWidth || 360) - 60);
+  const avail = Math.max(280, ($("taskList")?.clientWidth || document.querySelector(".wrap")?.clientWidth || 360) - 30);
   // One dot per day, at least ~40px apart; labels take one of three rows (below, above, further below) so they don't overlap.
   const groups = [];
   for (const t of pts) { const g = groups[groups.length - 1]; if (g && g.due === t.due) g.tasks.push(t); else groups.push({ due: t.due, tasks: [t] }); }
