@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700&family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&display=swap">
 <style>
 /* Layout follows Dusit Daily: phone-first, deep "night" cards, glass pill nav with a centre button,
    bottom sheets for every action. BRAND: change --brand / --brand-hi / --night here. */
@@ -28,6 +28,8 @@
   --violet:#7a5cc4; --violet-ink:#5f43a6; --violet-soft:#efe9fb;
   --line-green:#06c755;
   --scrim:rgba(15,34,48,.55); --shadow:0 1px 2px rgba(15,34,48,.04),0 8px 24px rgba(15,34,48,.06);
+  --f-hud:"Chakra Petch","Anuphan",system-ui,sans-serif;
+  --hud-bg:#03141a; --hud-panel:rgba(10,42,46,.72); --hud-line:rgba(143,220,182,.3); --hud-cyan:#9be4c0; --hud-text:#eef7f2; --hud-dim:#9db8ad;
   --f-display:"Anuphan","IBM Plex Sans Thai Looped",system-ui,sans-serif;
   --f-body:"IBM Plex Sans Thai Looped","Noto Sans Thai",system-ui,sans-serif;
 }
@@ -228,6 +230,103 @@ textarea.out{min-height:240px;background:var(--card);font-size:15px}
 .swatches{display:flex;gap:10px;flex-wrap:wrap}
 .sw{width:36px;height:36px;border-radius:50%;background:var(--c);border:3px solid transparent;box-shadow:0 0 0 1px var(--line)}
 .sw[aria-pressed="true"]{border-color:var(--bg);box-shadow:0 0 0 2px var(--ink)}
+
+/* Putter Help: HUD chat (always dark by design), same build as Dusit Help */
+.nav-btn.help{color:var(--brand-hi)}
+.nav-reactor{width:30px;height:30px;display:block}
+.nav-reactor .reactor{width:30px;height:30px;filter:drop-shadow(0 0 6px rgba(143,220,182,.6))}
+.reactor{width:64px;height:64px;flex:none;filter:drop-shadow(0 0 10px rgba(143,220,182,.5))}
+.reactor svg{width:100%;height:100%;overflow:visible}
+.reactor .r-ring{transform-origin:60px 60px;transform-box:view-box;animation:rspin 14s linear infinite}
+.reactor .r-ring circle{fill:none;stroke:var(--hud-cyan)}
+.reactor .r1 circle{stroke-width:2.4;opacity:.9}
+.reactor .r2{animation-duration:26s;animation-direction:reverse}
+.reactor .r2 circle{stroke-width:4;opacity:.45}
+.reactor .r3{animation-duration:9s}
+.reactor .r3 circle{stroke:#e6fff2;stroke-width:2.2;opacity:.85}
+.reactor .r4{animation-duration:5s;animation-direction:reverse}
+.reactor .r4 circle{stroke-width:1.6;opacity:.8}
+.reactor .r-halo{fill:rgba(143,220,182,.12);transform-origin:60px 60px;transform-box:view-box;animation:rbreathe 3.2s ease-in-out infinite}
+.reactor .r-core{animation:rcore 3.2s ease-in-out infinite}
+.reactor[data-state="listen"] .r-ring{animation-duration:3s}
+.reactor[data-state="listen"] .r-halo{fill:rgba(255,106,92,.22);animation-duration:.9s}
+.reactor[data-state="listen"] .r1 circle,.reactor[data-state="listen"] .r4 circle{stroke:#ff8a7e}
+.reactor[data-state="think"] .r-ring{animation-duration:1.6s}
+.reactor[data-state="think"] .r-halo{animation-duration:1.2s}
+@keyframes rspin{to{transform:rotate(360deg)}}
+@keyframes rbreathe{50%{transform:scale(1.12);opacity:.6}}
+@keyframes rcore{50%{opacity:.75}}
+.sheet.hud{height:92%;color:var(--hud-text);background:
+  radial-gradient(120% 60% at 50% 0%,rgba(143,220,182,.16),transparent 60%),
+  linear-gradient(rgba(143,220,182,.05) 1px,transparent 1px) 0 0/100% 26px,
+  linear-gradient(90deg,rgba(143,220,182,.05) 1px,transparent 1px) 0 0/26px 100%,
+  var(--hud-bg);box-shadow:0 -12px 50px rgba(0,0,0,.5),inset 0 1px 0 rgba(143,220,182,.35)}
+.sheet.hud{overflow-x:hidden}
+.sheet.hud .sheet-in{min-height:100%;min-width:0}
+.dock,.chat{min-width:0;max-width:100%}
+.sheet.hud .sheet-top{background:transparent}
+.sheet.hud .grab{background:rgba(143,220,182,.35)}
+.sheet.hud .sheet-x{background:rgba(255,255,255,.06);border-color:var(--hud-line);color:var(--hud-cyan)}
+.jv-head{display:flex;gap:14px;align-items:center;padding:4px 52px 10px 0;border-bottom:1px solid var(--hud-line)}
+.jv-title{flex:1;min-width:0}
+.jv-title h3{font-family:var(--f-hud);font-weight:700;font-size:21px;letter-spacing:.14em;text-transform:uppercase;color:#fff;text-shadow:0 0 14px rgba(143,220,182,.55);padding:0}
+.hud-status{display:flex;align-items:center;gap:8px;font-family:var(--f-hud);font-size:13px;letter-spacing:.04em;color:var(--hud-cyan);margin-top:2px}
+.hud-dot{width:8px;height:8px;border-radius:50%;background:#3cf0a0;box-shadow:0 0 8px #3cf0a0;animation:rcore 1.6s infinite}
+.hud-status[data-state="listen"] .hud-dot{background:#ff6a5c;box-shadow:0 0 8px #ff6a5c}
+.hud-status[data-state="think"] .hud-dot{background:#ffd27a;box-shadow:0 0 8px #ffd27a}
+.hud-wave{display:none;gap:2px;align-items:center;height:14px}
+.hud-status[data-state="listen"] .hud-wave{display:inline-flex}
+.hud-wave i{width:3px;height:4px;border-radius:2px;background:#ff8a7e;animation:wv .8s ease-in-out infinite}
+.hud-wave i:nth-child(2){animation-delay:.12s}.hud-wave i:nth-child(3){animation-delay:.24s}.hud-wave i:nth-child(4){animation-delay:.36s}.hud-wave i:nth-child(5){animation-delay:.48s}
+@keyframes wv{50%{height:14px}}
+.hud-btn{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--hud-dim);border:1px solid var(--hud-line);background:rgba(255,255,255,.04)}
+.hud-btn svg{width:20px;height:20px}
+.hud-btn[aria-pressed="true"]{color:var(--hud-cyan);box-shadow:0 0 12px rgba(143,220,182,.35)}
+.chat{flex:1;display:flex;flex-direction:column;gap:12px;padding:14px 0 6px}
+.bubble{position:relative;max-width:90%;padding:12px 14px;font-size:15px;line-height:1.55;overflow-wrap:anywhere}
+.bubble.bot{align-self:flex-start;color:var(--hud-text);background:var(--hud-panel);border:1px solid var(--hud-line);border-radius:4px 16px 16px 16px;display:flex;flex-direction:column;gap:8px;box-shadow:inset 0 0 24px rgba(143,220,182,.06)}
+.bubble.bot::before{content:"";position:absolute;left:-1px;top:-1px;width:14px;height:14px;border-left:2px solid var(--hud-cyan);border-top:2px solid var(--hud-cyan);border-radius:4px 0 0 0}
+.bubble.bot .who{font-family:var(--f-hud);font-size:11px;letter-spacing:.16em;color:var(--hud-cyan);opacity:.85}
+.bubble.me{align-self:flex-end;color:#effff6;background:rgba(143,220,182,.14);border:1px solid rgba(143,220,182,.45);border-radius:16px 4px 16px 16px;white-space:pre-wrap}
+.brief-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:4px}
+.brief-grid div{border:1px solid var(--hud-line);border-radius:10px;padding:8px 4px;text-align:center;background:rgba(0,0,0,.2)}
+.brief-grid b{display:block;font-family:var(--f-hud);font-size:22px;color:#fff}
+.brief-grid span{font-size:11.5px;color:var(--hud-dim)}
+.brief-grid .hot b{color:#ff8a7e}
+.act{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(143,220,182,.14);font-size:13.5px}
+.act-ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;flex:none;color:var(--hud-cyan);background:rgba(143,220,182,.12)}
+.act-ic svg{width:15px;height:15px}
+.act.done .act-ic{color:#3cf0a0;background:rgba(60,240,160,.12)}
+.act.delete .act-ic,.act.miss .act-ic{color:#ff8a7e;background:rgba(255,106,92,.12)}
+.act.open .act-ic{color:#ffd27a;background:rgba(255,210,122,.12)}
+.act-t{flex:1;min-width:0;color:var(--hud-text)}
+.act .note{color:var(--hud-dim)}
+.mini{flex:none;font-size:13px;font-weight:600;padding:5px 11px;border-radius:99px;background:transparent;border:1px solid var(--hud-line);color:var(--hud-cyan)}
+.mini.go{border:0;color:#06281b;background:linear-gradient(135deg,var(--brand-hi),var(--brand))}
+.scan{display:flex;flex-direction:column;gap:6px;min-width:180px}
+.scan span{font-family:var(--f-hud);font-size:12.5px;letter-spacing:.06em;color:var(--hud-cyan)}
+.scan i{display:block;height:3px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--hud-cyan),transparent);background-size:50% 100%;background-repeat:no-repeat;animation:scan 1.1s linear infinite;background-color:rgba(143,220,182,.12)}
+@keyframes scan{from{background-position:-50% 0}to{background-position:150% 0}}
+.caret::after{content:"▍";color:var(--hud-cyan);animation:rcore .8s infinite}
+.dock{position:sticky;bottom:calc(-24px - env(safe-area-inset-bottom,0px));padding-block:10px calc(24px + env(safe-area-inset-bottom,0px));margin-bottom:calc(-24px - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,transparent,var(--hud-bg) 22%)}
+.suggest{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;min-width:0;max-width:100%}
+.suggest::-webkit-scrollbar{display:none}
+.sheet.hud .suggest .chip{flex:none;background:rgba(143,220,182,.06);border-color:var(--hud-line);color:var(--hud-cyan);font-weight:600}
+.partial{color:var(--hud-cyan);min-height:0;font-size:14px}
+.partial:empty{display:none}
+.composer{display:flex;gap:8px;align-items:flex-end;background:rgba(4,30,34,.9);border:1px solid var(--hud-line);border-radius:22px;padding:6px;transition:box-shadow .2s,border-color .2s}
+.composer:focus-within{border-color:var(--hud-cyan);box-shadow:0 0 18px rgba(143,220,182,.3)}
+.composer textarea{border:0;background:none;color:var(--hud-text);min-height:0;padding:10px 4px;resize:none;border-radius:0;outline:none;line-height:1.4;min-width:0;flex:1;height:44px}
+.composer textarea::placeholder{color:var(--hud-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mic-btn,.send-btn{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;transition:transform .12s}
+.mic-btn:active,.send-btn:active{transform:scale(.92)}
+.mic-btn{color:var(--hud-cyan);background:rgba(143,220,182,.1);box-shadow:inset 0 0 0 1.5px var(--hud-line)}
+.mic-btn.live{background:#ff5a4c;color:#fff;animation:pulse2 1.1s infinite}
+@keyframes pulse2{0%{box-shadow:0 0 0 0 rgba(255,90,76,.6)}70%{box-shadow:0 0 0 10px rgba(255,90,76,0)}}
+.send-btn{color:#06281b;background:linear-gradient(135deg,var(--brand-hi),var(--brand));box-shadow:0 0 14px rgba(143,220,182,.35)}
+.mic-btn svg,.send-btn svg{width:22px;height:22px}
+.sheet.hud button:focus-visible,.sheet.hud textarea:focus-visible{outline-color:var(--hud-cyan)}
+@media (prefers-reduced-motion:reduce){.reactor *,.hud-dot,.scan i{animation:none!important}}
 @media (max-width:380px){.top h1{font-size:26px}.seg button{font-size:14px}}
 </style>
 </head>
@@ -238,7 +337,8 @@ textarea.out{min-height:240px;background:var(--card);font-size:15px}
   <section id="v-home">
     <header class="top">
       <div><div class="eyebrow"><span id="todayLabel"></span><span class="pill" id="aiPill">ร่างมาตรฐาน</span></div><h1>Putter Daily</h1></div>
-      <button class="icon-btn" id="addProject" aria-label="เพิ่มโครงการ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      <div class="row" style="flex-wrap:nowrap;gap:8px"><button class="icon-btn" id="openSettings" aria-label="ตั้งค่า"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+      <button class="icon-btn" id="addProject" aria-label="เพิ่มโครงการ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
     </header>
     <div class="hero" id="hero"></div>
     <div class="sec-h"><h2>โครงการ</h2><span class="note">แตะเพื่อเลือกงานที่จะสรุป</span></div>
@@ -316,7 +416,7 @@ textarea.out{min-height:240px;background:var(--card);font-size:15px}
   <div class="nav-in">
     <button class="nav-btn" id="navHome"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="7" height="7" rx="2"/><rect x="13.5" y="4" width="7" height="7" rx="2"/><rect x="3.5" y="14" width="7" height="7" rx="2"/><rect x="13.5" y="14" width="7" height="7" rx="2"/></svg>โครงการ</button>
     <button class="fab" id="fab" aria-label="เพิ่มงาน"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>งาน</button>
-    <button class="nav-btn" id="navSettings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>ตั้งค่า</button>
+    <button class="nav-btn help" id="navHelp" aria-label="Putter Help"><span class="nav-reactor" id="navReactor"></span>Putter Help</button>
   </div>
 </nav>
 
@@ -446,7 +546,7 @@ function show(v) {
   view = v;
   for (const id of ["home", "project", "settings"]) $("v-" + id).hidden = id !== v;
   $("navHome").classList.toggle("on", v !== "settings");
-  $("navSettings").classList.toggle("on", v === "settings");
+  $("navHelp").classList.remove("on");
   $("actbar").hidden = v !== "project";
   render();
   window.scrollTo(0, 0);
@@ -547,7 +647,8 @@ function renderSettings() {
 
 /* ---------- sheet ---------- */
 const X_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>`;
-function openSheet(html, onClose) {
+function openSheet(html, onClose, cls) {
+  $("sheet").className = "sheet" + (cls ? " " + cls : "");
   $("sheetIn").innerHTML = `<div class="sheet-top"><span class="grab"></span><button class="sheet-x" data-close aria-label="ปิด">${X_ICON}</button></div>${html}`;
   $("sheet").hidden = false; $("scrim").hidden = false; $("sheet").scrollTop = 0;
   document.body.style.overflow = "hidden";
@@ -556,6 +657,7 @@ function openSheet(html, onClose) {
 function closeSheet() {
   $("sheet").hidden = true; $("scrim").hidden = true; document.body.style.overflow = "";
   const f = openSheet.onClose; openSheet.onClose = null; f && f();
+  $("navHelp").classList.remove("on");
   render();
 }
 $("scrim").onclick = closeSheet;
@@ -590,24 +692,37 @@ function editTask(id, pid) {
   $("tSave").onclick = () => {
     const title = $("tTitle").value.trim();
     if (!title) { $("tErr").textContent = "ใส่ชื่องานก่อน"; $("tErr").hidden = false; return; }
-    const now = new Date().toISOString();
     const nu = { title, status, owner: $("tOwner").value.trim(), due: $("tDue").value, time: $("tTime").value, detail: $("tDetail").value.trim(), projectId: $("tProj")?.value || t.projectId };
-    const log = [];
-    if (id) {
-      if (t.status !== nu.status) log.push(`เปลี่ยนสถานะ: ${ST[t.status]} → ${ST[nu.status]}`);
-      if ((t.due || "") !== nu.due || (t.time || "") !== nu.time) log.push(`เปลี่ยนกำหนด: ${dueText(t) || "ไม่มีกำหนด"} → ${dueText(nu) || "ไม่มีกำหนด"}`);
-      if ((t.owner || "") !== nu.owner) log.push(`เปลี่ยนผู้รับผิดชอบ: ${t.owner || "-"} → ${nu.owner || "-"}`);
-    }
     const upd = $("tUpd").value.trim();
-    const updates = [...(t.updates || []), ...log.map((text) => ({ at: now, text })), ...(upd ? [{ at: now, text: upd }] : [])];
-    if (id) Object.assign(t, nu, { updates, updatedAt: now, sample: t.sample && !log.length && !upd });
-    else S.tasks.push({ id: uid(), ...nu, updates, createdAt: now, updatedAt: now });
+    if (id) patchTask(t, nu, upd); else newTask(nu, upd);
     save(); closeSheet(); toast(id ? "บันทึกแล้ว" : "เพิ่มงานแล้ว");
   };
   if (id) $("tDel").onclick = () => {
     if (!confirm(`ลบงาน "${t.title}"?`)) return;
     S.tasks = S.tasks.filter((x) => x.id !== id); selOf(t.projectId).delete(id); save(); closeSheet(); toast("ลบแล้ว");
   };
+}
+
+/** Change a task and log what changed (status, due, owner) so summaries can say what moved. Returns the old copy. */
+function patchTask(t, nu, upd) {
+  const now = new Date().toISOString(), log = [], prev = JSON.parse(JSON.stringify(t));
+  const next = { ...t, ...nu };
+  if (t.status !== next.status) log.push(`เปลี่ยนสถานะ: ${ST[t.status]} → ${ST[next.status]}`);
+  if ((t.due || "") !== (next.due || "") || (t.time || "") !== (next.time || "")) log.push(`เปลี่ยนกำหนด: ${dueText(t) || "ไม่มีกำหนด"} → ${dueText(next) || "ไม่มีกำหนด"}`);
+  if ((t.owner || "") !== (next.owner || "")) log.push(`เปลี่ยนผู้รับผิดชอบ: ${t.owner || "-"} → ${next.owner || "-"}`);
+  const updates = [...(t.updates || []), ...log.map((text) => ({ at: now, text })), ...(upd ? [{ at: now, text: upd }] : [])];
+  Object.assign(t, nu, { updates, updatedAt: now, sample: t.sample && !log.length && !upd });
+  return prev;
+}
+function newTask(nu, upd) {
+  const now = new Date().toISOString();
+  const t = { id: uid(), status: "todo", owner: "", due: "", time: "", detail: "", ...nu, updates: upd ? [{ at: now, text: upd }] : [], createdAt: now, updatedAt: now };
+  S.tasks.push(t);
+  return t;
+}
+function restoreTask(prev) {
+  const i = S.tasks.findIndex((x) => x.id === prev.id);
+  if (i >= 0) S.tasks[i] = prev; else S.tasks.push(prev);
 }
 
 /* ---------- project editor ---------- */
@@ -790,7 +905,8 @@ function sourceList(tasks, notes) {
 
 /* ---------- summary sheet ---------- */
 let lastAudience = store.get("pd-aud", "boss");
-function openSummary() {
+function openSummary(audience) {
+  if (audience) lastAudience = audience;
   const p = projOf(curP), { tasks, notes } = chosen(curP);
   openSheet(`<h3>สรุปงาน</h3><p class="sub">${esc(p.name)}</p>
     <div class="seg" id="audSeg"><button data-a="boss">สรุปให้หัวหน้า<small>ขึ้นต้นด้วยผลล่าสุด/เรื่องที่ต้องตัดสินใจ</small></button><button data-a="team">สรุปให้ทีม<small>ขึ้นต้นด้วยงานที่แต่ละคนต้องทำ</small></button></div>
@@ -928,9 +1044,379 @@ function callName(c) {
   return n;
 }
 
+/* ---------- Putter Help ---------- */
+const IC = {
+  mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+  send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  speaker: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>',
+  add: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg>',
+  done: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+  update: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
+  delete: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13"/></svg>',
+  miss: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 6v8M12 18h.01"/></svg>',
+  open: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.6A8 8 0 1 1 21 12z"/></svg>',
+};
+function reactor(state = "idle") {
+  return `<div class="reactor" data-state="${state}" aria-hidden="true"><svg viewBox="0 0 120 120">
+    <defs><radialGradient id="rcore" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffffff"/><stop offset=".4" stop-color="#d6ffe9"/><stop offset="1" stop-color="#2f9e74" stop-opacity="0"/></radialGradient></defs>
+    <circle class="r-halo" cx="60" cy="60" r="40"/>
+    <g class="r-ring r1"><circle cx="60" cy="60" r="54" pathLength="100" stroke-dasharray="22 5 9 5 30 5 19 5"/></g>
+    <g class="r-ring r2"><circle cx="60" cy="60" r="45" pathLength="100" stroke-dasharray="1 2"/></g>
+    <g class="r-ring r3"><circle cx="60" cy="60" r="37" pathLength="100" stroke-dasharray="28 9 16 9 28 10"/></g>
+    <g class="r-ring r4"><circle cx="60" cy="60" r="29" pathLength="100" stroke-dasharray="62 38"/></g>
+    <circle class="r-core" cx="60" cy="60" r="21" fill="url(#rcore)"/>
+  </svg></div>`;
+}
+$("navReactor").innerHTML = reactor();
+
+let CHAT = [], helpBusy = false;
+const prefs = store.get("pd-prefs", { tts: false });
+const SUGGEST = ["มีอะไรค้างบ้าง", "รอคำตอบจากใครอยู่", "เรื่องไหนต้องให้หัวหน้าตัดสิน", "งานใกล้กำหนดสัปดาห์นี้", "สรุปให้หัวหน้า", "เพิ่มงาน: "];
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const voice = {
+  live: false, want: false, rec: null,
+  onFinal(text) { const ta = $("hNote"); if (!ta) return; ta.value = ta.value ? ta.value.replace(/\s+$/, "") + " " + String(text).trim() : String(text).trim(); const p = $("hPartial"); if (p) p.textContent = ""; },
+  onPartial(text) { const p = $("hPartial"); if (p) p.textContent = text; },
+  setLive(on) {
+    this.live = on;
+    const b = $("hMic"); if (b) { b.classList.toggle("live", on); b.setAttribute("aria-label", on ? "หยุดฟังแล้วส่ง" : "พูด"); }
+    if (!helpBusy) setHud(on ? "listen" : "idle");
+  },
+  start() { // must run inside a tap
+    if (!SR) { toast("เบราว์เซอร์นี้ฟังเสียงเองไม่ได้ ใช้ปุ่มไมค์บนคีย์บอร์ดแทน"); $("hNote")?.focus(); return; }
+    this.want = true;
+    const rec = this.rec = new SR();
+    rec.lang = "th-TH"; rec.continuous = true; rec.interimResults = true;
+    rec.onresult = (ev) => {
+      let interim = "";
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        const r = ev.results[i];
+        if (r.isFinal) this.onFinal(r[0].transcript); else interim += r[0].transcript;
+      }
+      this.onPartial(interim);
+    };
+    rec.onerror = (e) => { if (e.error === "not-allowed" || e.error === "service-not-allowed") { this.want = false; toast("เบราว์เซอร์ไม่อนุญาตไมค์ พิมพ์หรือใช้ไมค์ของคีย์บอร์ดแทน"); } };
+    rec.onend = () => { if (this.want) { try { rec.start(); return; } catch {} } this.setLive(false); };
+    try { rec.start(); this.setLive(true); } catch { this.setLive(false); }
+  },
+  async stop() {
+    this.want = false;
+    const rec = this.rec; this.rec = null;
+    if (rec) await new Promise((res) => {
+      const t = setTimeout(res, 1500);
+      rec.onend = () => { clearTimeout(t); res(); };
+      try { rec.stop(); } catch { clearTimeout(t); res(); }
+    });
+    this.setLive(false);
+  },
+};
+function setHud(state, text) {
+  const st = $("hudStatus"); if (!st) return;
+  st.dataset.state = state;
+  st.querySelector(".hud-txt").textContent = text || { idle: "พร้อม", listen: "กำลังฟัง…", think: "กำลังคิด…" }[state];
+  document.querySelectorAll(".jv-head .reactor").forEach((r) => (r.dataset.state = state));
+}
+function speak(text) {
+  if (!prefs.tts || !("speechSynthesis" in window)) return;
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text.replace(/[•\n]+/g, " ")); u.lang = "th-TH"; u.rate = 1.05; speechSynthesis.speak(u); } catch {}
+}
+const activeTasks = () => S.tasks.filter((t) => projOf(t.projectId) && !projOf(t.projectId).archived);
+function hudBriefing() {
+  const open = activeTasks().filter(isOpen);
+  const wait = open.filter((t) => t.status === "waiting").length, dec = open.filter((t) => t.status === "decision").length;
+  const late = open.filter((t) => t.due && daysFrom(t.due) < 0 && t.status !== "confirmed").length;
+  return `<div class="bubble bot"><span class="who">PUTTER HELP · ${esc(thDate(today()))}</span>
+    <div class="brief-grid"><div${late ? ' class="hot"' : ""}><b class="num">${late}</b><span>เลยกำหนด</span></div><div><b class="num">${wait}</b><span>รอคำตอบ</span></div><div><b class="num">${dec}</b><span>รอตัดสินใจ</span></div></div>
+    <div style="color:var(--hud-dim);font-size:14px">${view === "project" && projOf(curP) ? `กำลังดู ${esc(projOf(curP).name)} · ` : ""}สั่งได้เลยครับ เช่น "พี่นัทยืนยัน Artwork แล้ว" หรือ "ร่างไลน์ตามคุณแอ้เรื่องคิวคุณทีน่า"</div></div>`;
+}
+function openHelp(autoStart) {
+  const canSpeak = "speechSynthesis" in window;
+  openSheet(`
+    <div class="jv-head">${reactor()}
+      <div class="jv-title"><h3>Putter Help</h3>
+        <div class="hud-status" id="hudStatus" data-state="idle"><span class="hud-dot"></span><span class="hud-wave"><i></i><i></i><i></i><i></i><i></i></span><span class="hud-txt">พร้อม</span></div></div>
+      ${canSpeak ? `<button class="hud-btn" id="hTts" aria-pressed="${!!prefs.tts}" aria-label="ให้ Putter Help ตอบเป็นเสียง">${IC.speaker}</button>` : ""}
+    </div>
+    <div class="chat" id="hChat" aria-live="polite"></div>
+    <div class="dock">
+      <div class="suggest">${SUGGEST.map((x) => `<button class="chip" data-s="${esc(x)}">${esc(x.replace(/: $/, " …"))}</button>`).join("")}</div>
+      <div class="partial" id="hPartial"></div>
+      <div class="composer">
+        <button class="mic-btn" id="hMic" aria-label="พูด">${IC.mic}</button>
+        <textarea id="hNote" rows="1" placeholder="พิมพ์ พูด หรือวางโน้ตประชุม" aria-label="ข้อความถึง Putter Help"></textarea>
+        <button class="send-btn" id="hSend" aria-label="ส่ง">${IC.send}</button>
+      </div>
+    </div>`, () => { if (voice.live) voice.stop(); }, "hud");
+  $("navHelp").classList.add("on");
+  drawChat(); voice.setLive(voice.live);
+  const note = $("hNote");
+  const grow = () => { note.style.height = "auto"; note.style.height = Math.min(note.scrollHeight, 140) + "px"; };
+  note.addEventListener("input", grow);
+  note.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); submitHelp(note.value); } });
+  $("hSend").onclick = () => submitHelp(note.value);
+  $("hMic").onclick = () => {
+    if (voice.live) voice.stop().then(() => { if (note.value.trim()) submitHelp(note.value); });
+    else voice.start();
+  };
+  const tb = $("hTts");
+  if (tb) tb.onclick = () => {
+    prefs.tts = !prefs.tts; store.set("pd-prefs", prefs); tb.setAttribute("aria-pressed", String(prefs.tts));
+    if (prefs.tts) { try { speechSynthesis.speak(new SpeechSynthesisUtterance("")); } catch {} }
+    toast(prefs.tts ? "เปิดเสียงตอบแล้ว" : "ปิดเสียงตอบแล้ว");
+  };
+  document.querySelectorAll(".suggest [data-s]").forEach((b) => (b.onclick = () => {
+    const x = b.dataset.s;
+    if (x.endsWith(" ")) { note.value = x; note.focus(); grow(); } else submitHelp(x);
+  }));
+  if (autoStart) voice.start();
+}
+function drawChat() {
+  const el = $("hChat"); if (!el) return;
+  el.innerHTML = hudBriefing() + CHAT.map((m, i) => m.role === "user"
+    ? `<div class="bubble me">${esc(m.content.length > 600 ? m.content.slice(0, 600) + "…" : m.content)}</div>`
+    : `<div class="bubble bot"><span class="who">PUTTER HELP${m.basic ? " · แบบพื้นฐาน" : ""}</span>${m.pending ? '<div class="scan" aria-label="Putter Help กำลังคิด"><span>กำลังคิด…</span><i></i></div>' : `<div class="say ${m.fresh ? "caret" : ""}" data-i="${i}">${m.fresh ? "" : esc(m.content).replace(/\n/g, "<br>")}</div>`}
+      ${(m.actions || []).map((a, j) => `<div class="act ${a.kind}"><span class="act-ic" aria-hidden="true">${IC[a.kind] || IC.update}</span><span class="act-t">${esc(a.label)}</span>${
+        a.open ? `<button class="mini go" data-open="${i}:${j}">เปิด</button>`
+        : a.undone ? `<span class="note">ย้อนกลับแล้ว</span>`
+        : a.undo ? `<button class="mini" data-undo="${i}:${j}">ย้อนกลับ</button>` : ""}</div>`).join("")}</div>`).join("");
+  el.querySelectorAll("[data-undo]").forEach((b) => (b.onclick = () => {
+    const [i, j] = b.dataset.undo.split(":").map(Number); const a = CHAT[i].actions[j];
+    try { a.undo(); a.undone = true; save(); drawChat(); } catch { toast("ย้อนกลับไม่สำเร็จ"); }
+  }));
+  el.querySelectorAll("[data-open]").forEach((b) => (b.onclick = () => {
+    const [i, j] = b.dataset.open.split(":").map(Number); CHAT[i].actions[j].open();
+  }));
+  el.querySelectorAll(".say.caret").forEach((node) => {
+    const m = CHAT[+node.dataset.i]; m.fresh = false;
+    const text = m.content;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { node.classList.remove("caret"); node.innerHTML = esc(text).replace(/\n/g, "<br>"); return; }
+    let k = 0; const step = Math.max(2, Math.ceil(text.length / 18));
+    const t = setInterval(() => {
+      k = Math.min(text.length, k + step);
+      node.innerHTML = esc(text.slice(0, k)).replace(/\n/g, "<br>");
+      if (k >= text.length) { clearInterval(t); node.classList.remove("caret"); }
+      $("sheet").scrollTop = $("sheet").scrollHeight;
+    }, 22);
+  });
+  $("sheet").scrollTop = $("sheet").scrollHeight;
+}
+function helpPayload() {
+  const hist = [];
+  for (const m of CHAT) {
+    if (m.pending) continue;
+    const did = (m.actions || []).filter((a) => a.kind !== "miss" && !a.undone).map((a) => a.label);
+    const content = m.role === "assistant" && did.length ? `${m.content}\n[ทำแล้ว: ${did.join("; ")}]` : m.content;
+    if (hist.length && hist[hist.length - 1].role === m.role) hist[hist.length - 1].content += "\n" + content;
+    else hist.push({ role: m.role, content });
+  }
+  let messages = hist.slice(-12);
+  while (messages.length && messages[0].role !== "user") messages = messages.slice(1);
+  const cutoff = addDays(today(), -30);
+  const tasks = activeTasks().filter((t) => isOpen(t) || (t.updatedAt || "").slice(0, 10) >= cutoff).slice(0, 300);
+  return {
+    messages, today: today(), now: thDate(today(), { long: true, year: true }) + " " + new Date().toTimeString().slice(0, 5),
+    current: view === "project" ? curP : "", profile: S.profile,
+    projects: S.projects.filter((p) => !p.archived).map((p) => ({ id: p.id, name: p.name, desc: p.desc })),
+    tasks: tasks.map((t) => ({ id: t.id, projectId: t.projectId, title: t.title, status: t.status, owner: t.owner, due: t.due, time: t.time, detail: t.detail,
+      updates: (t.updates || []).slice(-4).map((u) => `${u.at.slice(0, 10)} ${u.text}`) })),
+  };
+}
+async function submitHelp(text) {
+  text = String(text || "").trim();
+  if (!text || helpBusy) return;
+  helpBusy = true;
+  const note = $("hNote"); if (note) { note.value = ""; note.style.height = "auto"; }
+  if (voice.live) await voice.stop();
+  if (note) note.value = "";
+  CHAT.push({ role: "user", content: text });
+  const bot = { role: "assistant", content: "", pending: true };
+  CHAT.push(bot); drawChat(); setHud("think");
+  let res = null;
+  if (SERVER.ai) {
+    try { res = await apiJSON("/api/help", helpPayload()); }
+    catch (e) { console.warn("Putter Help fallback:", e.message); }
+  }
+  if (!res || typeof res !== "object") { res = localHelp(text); bot.basic = true; }
+  bot.actions = applyActions(Array.isArray(res.actions) ? res.actions : []);
+  bot.content = String(res.reply || "").trim() || (bot.actions.length ? "เรียบร้อยครับ" : "ยังไม่เข้าใจครับ ลองบอกชื่องานหรือชื่อคนอีกครั้ง");
+  bot.pending = false; bot.fresh = true;
+  CHAT = CHAT.slice(-40);
+  helpBusy = false;
+  save(); drawChat(); setHud("idle"); speak(bot.content);
+}
+async function apiJSON(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "content-type": "application/json", "x-app-pin": S.pin || "" }, body: JSON.stringify(body) });
+  let d = {}; try { d = await r.json(); } catch {}
+  if (!r.ok) throw new Error(d.error || "เชื่อมต่อไม่สำเร็จ");
+  return d;
+}
+
+/* Carry out what Putter Help decided. Each change gets an undo; summaries and LINE drafts open on a tap. */
+const isYmd = (x) => /^\d{4}-\d{2}-\d{2}$/.test(x || "");
+const isHm = (x) => /^\d{2}:\d{2}$/.test(x || "");
+function pickProject(ref) {
+  if (!ref) return projOf(curP) && view === "project" ? projOf(curP) : null;
+  return projOf(ref) || S.projects.find((p) => p.name.toLowerCase() === String(ref).toLowerCase()) || null;
+}
+function openWith(pid, ids, fn) {
+  return () => {
+    curP = pid; filter = "open";
+    const sel = selOf(pid); sel.clear();
+    for (const id of ids) if (S.tasks.some((t) => t.id === id && t.projectId === pid)) sel.add(id);
+    if (view !== "project") show("project"); else renderProject();
+    fn();
+  };
+}
+function applyActions(acts) {
+  const out = [];
+  for (const a of acts.slice(0, 20)) {
+    const type = a?.type;
+    const t = a?.id && !/,/.test(a.id) ? S.tasks.find((x) => x.id === a.id) : null;
+    if (type === "add") {
+      const p = pickProject(a.project) || (S.projects.length === 1 ? S.projects[0] : null);
+      if (!p || !String(a.title || "").trim()) { out.push({ kind: "miss", label: "ยังไม่รู้ว่าจะเพิ่มในโครงการไหน" }); continue; }
+      const n = newTask({ projectId: p.id, title: String(a.title).trim().slice(0, 200), status: ST[a.status] ? a.status : "todo", owner: String(a.owner || "").slice(0, 60),
+        due: isYmd(a.due) ? a.due : "", time: isHm(a.time) ? a.time : "", detail: String(a.detail || "").slice(0, 800) }, String(a.update || "").trim());
+      out.push({ kind: "add", label: `เพิ่มใน ${p.name}: ${n.title}${n.owner ? " · " + n.owner : ""}${n.due ? " · " + dueText(n) : ""} · ${ST[n.status]}`,
+        undo: () => { S.tasks = S.tasks.filter((x) => x.id !== n.id); } });
+    } else if (type === "add_project") {
+      const name = String(a.project || a.title || "").trim().slice(0, 120);
+      if (!name) continue;
+      const np = { id: uid(), name, desc: String(a.detail || "").slice(0, 200), color: COLORS[S.projects.length % COLORS.length] };
+      S.projects.push(np);
+      out.push({ kind: "add", label: `สร้างโครงการ ${name}`, undo: () => { S.projects = S.projects.filter((p) => p.id !== np.id); } });
+    } else if (type === "note") {
+      const p = pickProject(a.project);
+      const text = String(a.detail || "").trim();
+      if (!p || !text) { out.push({ kind: "miss", label: "ยังไม่รู้ว่าจะเก็บโน้ตไว้ในโครงการไหน" }); continue; }
+      const before = S.notes[p.id] || "", beforeUse = S.useNotes[p.id];
+      S.notes[p.id] = (before ? before.replace(/\s+$/, "") + "\n\n" : "") + `[${thDate(today())}]\n${text}`;
+      S.useNotes[p.id] = true;
+      out.push({ kind: "update", label: `เก็บโน้ตไว้ใน ${p.name} (${text.length.toLocaleString()} ตัวอักษร)`, undo: () => { S.notes[p.id] = before; S.useNotes[p.id] = beforeUse; } });
+    } else if (type === "summary" || type === "line") {
+      const ids = String(a.id || "").split(",").map((x) => x.trim()).filter((id) => S.tasks.some((x) => x.id === id));
+      const p = pickProject(a.project) || (ids.length ? projOf(S.tasks.find((x) => x.id === ids[0]).projectId) : null);
+      if (!p) { out.push({ kind: "miss", label: "บอกชื่อโครงการด้วยครับ" }); continue; }
+      const n = ids.length || tasksOf(p.id).filter(isOpen).length;
+      if (type === "summary") {
+        const aud = a.audience === "team" ? "team" : "boss";
+        out.push({ kind: "open", label: `${aud === "boss" ? "สรุปให้หัวหน้า" : "สรุปให้ทีม"} · ${p.name} · ${n} งาน`, open: openWith(p.id, ids, () => openSummary(aud)) });
+      } else {
+        const preset = {};
+        if (RECIPIENTS.some((r) => r[0] === a.recipient)) preset.recipient = a.recipient;
+        if (PURPOSES.some((r) => r[0] === a.purpose)) preset.purpose = a.purpose;
+        if (a.format === "short" || a.format === "list") preset.format = a.format;
+        for (const k of ["name", "replyBy", "reason", "oldTime", "newTime"]) if (a[k]) preset[k] = String(a[k]).slice(0, 120);
+        if (preset.name) preset.name = preset.name.replace(preset.recipient === "external" ? /^คุณ\s*/ : preset.recipient === "senior" ? /^พี่\s*/ : /^$/, "");
+        if (preset.purpose === "reschedule") preset.pending = a.pending !== false;
+        const who = preset.name ? (preset.recipient === "senior" ? "พี่" : preset.recipient === "external" ? "คุณ" : "") + preset.name : (RECIPIENTS.find((r) => r[0] === preset.recipient) || [, ""])[1];
+        out.push({ kind: "open", label: `ร่าง LINE${who ? " ถึง " + who : ""} · ${(PURPOSES.find((r) => r[0] === preset.purpose) || [, "ตามงาน"])[1]} · ${n} งาน`,
+          open: openWith(p.id, ids, () => openLine(preset)) });
+      }
+    } else if (!t) {
+      out.push({ kind: "miss", label: "ไม่พบงานที่พูดถึง" });
+    } else if (type === "update") {
+      const nu = {};
+      if (String(a.title || "").trim()) nu.title = String(a.title).trim().slice(0, 200);
+      if (ST[a.status]) nu.status = a.status;
+      if (a.owner) nu.owner = String(a.owner).slice(0, 60);
+      if (isYmd(a.due)) nu.due = a.due;
+      if (isHm(a.time)) nu.time = a.time;
+      if (a.detail) nu.detail = String(a.detail).slice(0, 800);
+      const upd = String(a.update || "").trim().slice(0, 300);
+      if (!Object.keys(nu).length && !upd) continue;
+      const prev = patchTask(t, nu, upd);
+      const bits = [nu.status && ST[nu.status], nu.owner, (nu.due || nu.time) && dueText(t), upd].filter(Boolean);
+      out.push({ kind: nu.status === "done" ? "done" : "update", label: `${t.title}: ${bits.join(" · ") || "แก้รายละเอียดแล้ว"}`, undo: () => restoreTask(prev) });
+    } else if (type === "delete") {
+      const keep = JSON.parse(JSON.stringify(t));
+      S.tasks = S.tasks.filter((x) => x.id !== t.id);
+      out.push({ kind: "delete", label: `ลบ ${t.title}`, undo: () => restoreTask(keep) });
+    }
+  }
+  return out;
+}
+
+/* Basic mode (no AI): fixed phrases only. Keep in step with SYSTEM in api/help.js where it overlaps. */
+const TH_DAYS_RE = { "อาทิตย์": 0, "จันทร์": 1, "อังคาร": 2, "พุธ": 3, "พฤหัส": 4, "ศุกร์": 5, "เสาร์": 6 };
+function parseWhen(text) {
+  const r = {};
+  if (/มะรืน/.test(text)) r.due = addDays(today(), 2);
+  else if (/พรุ่งนี้/.test(text)) r.due = addDays(today(), 1);
+  else if (/วันนี้/.test(text)) r.due = today();
+  else {
+    const m = text.match(/(อาทิตย์|จันทร์|อังคาร|พุธ|พฤหัส|ศุกร์|เสาร์)/);
+    if (m) { const want = TH_DAYS_RE[m[1]], d = parseD(today()); const k = (want - d.getDay() + 7) % 7 || 7; r.due = addDays(today(), k); }
+    const n = text.match(/(?:วันที่|ภายใน|ก่อน)\s*(\d{1,2})(?!\s*[.:]\d)/);
+    if (n) { const d = parseD(today()); let day = +n[1]; let c = new Date(d.getFullYear(), d.getMonth(), day); if (c < d) c = new Date(d.getFullYear(), d.getMonth() + 1, day); r.due = ymd(c); }
+  }
+  const t = text.match(/(\d{1,2})[.:](\d{2})\s*(?:น\.?)?/);
+  if (t && +t[1] < 24) r.time = `${pad(+t[1])}:${t[2]}`;
+  return r;
+}
+function personIn(text) {
+  const m = text.match(/(พี่|คุณ)\s?([ก-๙A-Za-z]{2,}?)(?=\s|ครับ|ค่ะ|ยืนยัน|ตอบ|ส่ง|เรื่อง|ว่า|ให้|ช่วย|แล้ว|ดูแล|รับ|ทำ|เป็น|จะ|ขอ|$)/);
+  return m ? { prefix: m[1], name: m[2], full: m[1] + m[2] } : null;
+}
+function findTasks(text, pool) {
+  const low = text.toLowerCase();
+  const scored = pool.map((t) => {
+    const words = t.title.toLowerCase().split(/[\s,/()–-]+/).filter((w) => w.length >= 3);
+    let sc = words.reduce((n, w) => n + (low.includes(w) ? w.length : 0), 0);
+    if (sc === 0 && t.title.length >= 4 && low.includes(t.title.toLowerCase().slice(0, 6))) sc = 6;
+    return { t, sc };
+  }).filter((x) => x.sc > 0).sort((a, b) => b.sc - a.sc);
+  return scored.length && (scored.length === 1 || scored[0].sc > scored[1].sc) ? [scored[0].t] : scored.map((x) => x.t);
+}
+const listReply = (head, ts) => !ts.length ? `${head}: ไม่มีครับ` :
+  `${head} ${ts.length} งาน\n` + ts.slice(0, 10).map((t) => `• ${t.title}${t.owner ? " — " + t.owner : ""}${t.due ? " · " + dueText(t) : ""}`).join("\n") + (ts.length > 10 ? `\nและอีก ${ts.length - 10} งาน` : "");
+function localHelp(text) {
+  const inProj = view === "project" ? curP : "";
+  const mentioned = S.projects.find((p) => text.toLowerCase().includes(p.name.toLowerCase()) || (p.name.length > 6 && text.toLowerCase().includes(p.name.toLowerCase().split(" ").pop())));
+  const pid = mentioned?.id || inProj;
+  const pool = activeTasks().filter((t) => !pid || t.projectId === pid);
+  const open = sortTasks(pool.filter(isOpen));
+  const isQ = /\?|อะไร|ไหน|บ้าง|กี่|ใคร|ยังไง|หรือยัง/.test(text);
+  if (isQ && !/^(สรุป|ร่าง|ส่ง)/.test(text)) {
+    if (/ตัดสิน/.test(text)) return { reply: listReply("รอตัดสินใจ", open.filter((t) => t.status === "decision")), actions: [] };
+    if (/รอ(คำ)?ตอบ|รอใคร|รอ.*อยู่/.test(text)) return { reply: listReply("รอคำตอบ", open.filter((t) => t.status === "waiting")), actions: [] };
+    if (/ข้อเสนอ|หารือ|พิจารณา/.test(text)) return { reply: listReply("ข้อเสนอที่ยังหารืออยู่", open.filter((t) => t.status === "proposal")), actions: [] };
+    if (/ยืนยัน|ตกลง|มติ/.test(text)) return { reply: listReply("ยืนยันแล้ว", open.filter((t) => t.status === "confirmed")), actions: [] };
+    if (/กำหนด|สัปดาห์|อาทิตย์นี้|ด่วน/.test(text)) return { reply: listReply("ใกล้กำหนดใน 7 วัน", open.filter((t) => t.due && daysFrom(t.due) <= 7 && t.status !== "confirmed").sort((a, b) => a.due.localeCompare(b.due))), actions: [] };
+    return { reply: listReply("ยังไม่เสร็จ", open.filter((t) => t.status !== "confirmed")), actions: [] };
+  }
+  const blank = { id: "", project: "", title: "", status: "", owner: "", due: "", time: "", detail: "", update: "" };
+  if (/^\s*สรุป/.test(text)) {
+    const p = pid || S.projects[0]?.id;
+    return { reply: "เปิดหน้าสรุปให้แล้วครับ", actions: [{ ...blank, type: "summary", project: p, audience: /ทีม/.test(text) ? "team" : "boss" }] };
+  }
+  if (/ไลน์|line|ร่างข้อความ|^ตาม/i.test(text)) {
+    const who = personIn(text);
+    const hits = findTasks(text, open);
+    const byOwner = who ? open.filter((t) => t.owner.includes(who.name)) : [];
+    const ts = hits.length ? hits : byOwner;
+    const p = pid || ts[0]?.projectId || S.projects[0]?.id;
+    const purpose = /เลื่อน|เปลี่ยน(วัน|เวลา|กำหนด)/.test(text) ? "reschedule" : /ยืนยัน/.test(text) ? "confirm" : /พิจารณา|อนุมัติ|ตัดสิน/.test(text) ? "consider" : /อัปเดต|ความคืบหน้า|แจ้ง/.test(text) ? "progress" : "follow";
+    const recipient = /หัวหน้า|ผู้บริหาร/.test(text) ? "boss" : /กลุ่ม|คณะทำงาน|ทีม/.test(text) ? "committee" : who?.prefix === "คุณ" ? "external" : "senior";
+    return { reply: "เปิดหน้าร่าง LINE ให้แล้วครับ ตรวจแล้วกดร่างได้เลย", actions: [{ ...blank, type: "line", project: p, id: ts.filter((t) => t.projectId === p).map((t) => t.id).join(","), recipient, name: who?.name || "", purpose, format: recipient === "committee" ? "list" : "short" }] };
+  }
+  const status = /เสร็จ|เรียบร้อย|ส่งแล้ว|ปิดงาน/.test(text) ? "done" : /ยืนยันแล้ว|ตกลงแล้ว|อนุมัติแล้ว|ได้ข้อสรุป/.test(text) ? "confirmed" : /รอ.*ตอบ|ส่งไปแล้ว รอ/.test(text) ? "waiting" : "";
+  const hits = findTasks(text, pool);
+  if (status && hits.length === 1) return { reply: `อัปเดตแล้วครับ`, actions: [{ ...blank, type: "update", id: hits[0].id, status }] };
+  if (status && hits.length > 1) return { reply: `เจอหลายงานที่ตรงกันครับ บอกชื่องานให้ชัดขึ้นหน่อย\n` + hits.slice(0, 5).map((t) => "• " + t.title).join("\n"), actions: [] };
+  const p = pid || (S.projects.length === 1 ? S.projects[0].id : "");
+  if (!p) return { reply: "จะเพิ่มงานในโครงการไหนครับ เปิดหน้าโครงการก่อน หรือพูดชื่อโครงการมาด้วย", actions: [] };
+  const who = personIn(text), when = parseWhen(text);
+  const title = text.replace(/^\s*(เพิ่มงาน|จดไว้|จด|งาน)\s*[:：]?\s*/, "").trim().slice(0, 200);
+  if (title.length < 3) return { reply: "ยังไม่เข้าใจครับ ลองพิมพ์ชื่องาน หรือถามว่า \"มีอะไรค้างบ้าง\"", actions: [] };
+  return { reply: "จดไว้แล้วครับ", actions: [{ ...blank, type: "add", project: p, title, status: /รอ/.test(text) ? "waiting" : /เสนอ/.test(text) ? "proposal" : "todo", owner: who?.full || "", due: when.due || "", time: when.time || "" }] };
+}
+
 /* ---------- events ---------- */
 $("navHome").onclick = () => show("home");
-$("navSettings").onclick = () => show("settings");
+$("openSettings").onclick = () => show("settings");
+$("navHelp").onclick = () => openHelp();
 $("backHome").onclick = () => show("home");
 $("addProject").onclick = () => editProject();
 $("editProject").onclick = () => editProject(curP);
