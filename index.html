@@ -103,6 +103,9 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 /* tags */
 .tag{display:inline-flex;align-items:center;font-size:12px;font-weight:600;padding:1px 9px;border-radius:99px;white-space:nowrap;background:var(--line);color:var(--muted)}
 .tag.todo{background:var(--blue-soft);color:var(--blue-ink)}
+.tag.urgent{background:var(--red-soft);color:var(--red-ink)}
+.tag.follow{background:var(--amber-soft);color:var(--amber-ink)}
+.tag.info{background:var(--brand-soft);color:var(--brand-ink)}
 .tag.waiting{background:var(--amber-soft);color:var(--amber-ink)}
 .tag.decision{background:var(--red-soft);color:var(--red-ink)}
 .tag.proposal{background:var(--violet-soft);color:var(--violet-ink)}
@@ -121,10 +124,16 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .task.sel{border-color:var(--brand);background:color-mix(in srgb,var(--brand-soft) 55%,var(--card))}
 .task.isdone .tt{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
 .pick{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;margin-top:-4px}
-.pick span{width:24px;height:24px;border-radius:8px;border:2px solid var(--line);display:grid;place-items:center;transition:background .12s,border-color .12s}
+.pick span{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;transition:background .12s,border-color .12s}
 .pick svg{width:16px;height:16px;color:#fff;opacity:0}
-.task.sel .pick span{background:var(--brand);border-color:var(--brand)}
-.task.sel .pick svg{opacity:1}
+.task.isdone .pick span{background:var(--brand);border-color:var(--brand)}
+.task.isdone .pick svg{opacity:1}
+.pick:hover span{border-color:var(--brand)}
+.task.urgent{border-left:4px solid var(--red)}
+.toast-undo{color:var(--brand-hi);font-weight:700;font-size:14px;margin-left:12px}
+.pickrow{display:flex;align-items:flex-start;gap:10px;padding:6px 0;font-size:14px;cursor:pointer}
+.pickrow input{width:19px;height:19px;margin:2px 0 0;accent-color:var(--brand);flex:none}
+.pickrow .tag{margin-left:4px}
 .tbody{text-align:left;min-width:0;padding:0}
 .tt{font-weight:600;font-size:15.5px;line-height:1.4;overflow-wrap:anywhere}
 .tmeta{display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap;margin-top:4px;font-size:13px;color:var(--muted)}
@@ -360,8 +369,8 @@ textarea.out{min-height:240px;background:var(--card);font-size:15px}
 .act.open .act-ic{color:#ffd27a;background:rgba(255,210,122,.12)}
 .act-t{flex:1;min-width:0;color:var(--hud-text)}
 .act .note{color:var(--hud-dim)}
-.mini{flex:none;font-size:13px;font-weight:600;padding:5px 11px;border-radius:99px;background:transparent;border:1px solid var(--hud-line);color:var(--hud-cyan)}
-.mini.go{border:0;color:#06281b;background:linear-gradient(135deg,var(--brand-hi),var(--brand))}
+.act .mini{flex:none;font-size:13px;font-weight:600;padding:5px 11px;border-radius:99px;background:transparent;border:1px solid var(--hud-line);color:var(--hud-cyan)}
+.act .mini.go{border:0;color:#06281b;background:linear-gradient(135deg,var(--brand-hi),var(--brand))}
 .scan{display:flex;flex-direction:column;gap:6px;min-width:180px}
 .scan span{font-family:var(--f-hud);font-size:12.5px;letter-spacing:.06em;color:var(--hud-cyan)}
 .scan i{display:block;height:3px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--hud-cyan),transparent);background-size:50% 100%;background-repeat:no-repeat;animation:scan 1.1s linear infinite;background-color:rgba(143,220,182,.12)}
@@ -544,13 +553,12 @@ textarea.out{min-height:240px;background:var(--card);font-size:15px}
 "use strict";
 /* ---------- constants ---------- */
 const KEY = "putter-daily-v1";
-const STATUSES = [
-  ["todo", "ต้องทำ"], ["waiting", "รอคำตอบ"], ["decision", "รอตัดสินใจ"],
-  ["proposal", "ข้อเสนอ"], ["confirmed", "ยืนยันแล้ว"], ["done", "เสร็จแล้ว"],
-];
+// Three kinds of open work, as in Dusit Daily, plus done (tick the circle).
+const STATUSES = [["urgent", "ด่วน"], ["follow", "ติดตาม"], ["info", "แจ้งให้ทราบ"], ["done", "เสร็จแล้ว"]];
+const OLD_STATUS = { decision: "urgent", waiting: "follow", todo: "follow", proposal: "info", confirmed: "info" };
 const ST = Object.fromEntries(STATUSES);
 // Who the "owner" field means for each status
-const OWNER_LABEL = { todo: "ใครทำ", waiting: "รอคำตอบจากใคร", decision: "ใครเป็นคนตัดสิน", proposal: "ใครเสนอ", confirmed: "ใครรับไปทำต่อ", done: "ใครทำ" };
+const OWNER_LABEL = { urgent: "ใครดูแล", follow: "ใครดูแล / รอใคร", info: "เกี่ยวกับใคร", done: "ใครดูแล" };
 const RECIPIENTS = [["boss", "หัวหน้า"], ["senior", "พี่ในทีม"], ["committee", "คณะทำงาน"], ["external", "ผู้ประสานงานภายนอก"]];
 const PURPOSES = [["progress", "แจ้งความคืบหน้า"], ["follow", "ตามงาน"], ["confirm", "ขอคำยืนยัน"], ["consider", "ขอให้พิจารณา"], ["reschedule", "แจ้งเปลี่ยนกำหนดการ"]];
 const COLORS = ["#2f9e74", "#3d6fc4", "#e08a00", "#7a5cc4", "#d9473b", "#0f8ea8"];
@@ -583,14 +591,15 @@ const thTime = (t) => t ? t.replace(":", ".") + " น." : "";
 function dueText(t, opt) { return t.due ? thDate(t.due, opt) + (t.time ? " " + thTime(t.time) : "") : ""; }
 function dueBadge(t) {
   if (!t.due) return "";
-  const n = daysFrom(t.due), open = t.status !== "done" && t.status !== "confirmed";
+  const n = daysFrom(t.due), open = t.status !== "done" && t.status !== "info";
   let rel = n === 0 ? "วันนี้" : n === 1 ? "พรุ่งนี้" : n === -1 ? "เมื่อวาน" : n < 0 ? `เลยมา ${-n} วัน` : n <= 14 ? `อีก ${n} วัน` : "";
   const cls = open && n < 0 ? "late" : open && n <= 1 ? "soon" : "";
   return `<span class="due ${cls}">${esc(dueText(t))}${rel ? " · " + rel : ""}</span>`;
 }
-function toast(msg) {
+function toast(msg, undo) {
   const t = $("toast"); t.textContent = msg; t.hidden = false;
-  clearTimeout(toast.h); toast.h = setTimeout(() => (t.hidden = true), 2400);
+  if (undo) { const b = document.createElement("button"); b.className = "toast-undo"; b.textContent = "ย้อนกลับ"; b.onclick = () => { t.hidden = true; undo(); }; t.append(b); }
+  clearTimeout(toast.h); toast.h = setTimeout(() => (t.hidden = true), undo ? 5000 : 2400);
 }
 async function copyText(text) {
   try { await navigator.clipboard.writeText(text); return true; }
@@ -612,22 +621,22 @@ function seed() {
   const p1 = { id: uid(), name: "Sustainability SPARK", desc: "งานร่วมหลายภาคส่วน", color: COLORS[0], sample: true };
   const p2 = { id: uid(), name: "Good Growth", desc: "สื่อสารความยั่งยืนกับพนักงาน", color: COLORS[1], sample: true };
   const sat = (() => { const d = parseD(t0); d.setDate(d.getDate() + ((6 - d.getDay() + 7) % 7 || 7)); return ymd(d); })();
-  const mk = (p, o) => ({ id: uid(), projectId: p.id, status: "todo", owner: "", due: "", time: "", detail: "", updates: [], createdAt: now, updatedAt: now, sample: true, ...o });
+  const mk = (p, o) => ({ id: uid(), projectId: p.id, status: "follow", owner: "", due: "", time: "", detail: "", updates: [], createdAt: now, updatedAt: now, sample: true, ...o });
   return {
     projects: [p1, p2],
     tasks: [
-      mk(p1, { title: "ยืนยัน Artwork บอร์ด I-SPARK", status: "waiting", owner: "พี่นัท", due: sat,
+      mk(p1, { title: "ยืนยัน Artwork บอร์ด I-SPARK", status: "follow", owner: "พี่นัท", due: sat,
         detail: "ทีมจะส่งผลิตวันอาทิตย์ เพื่อติดตั้งวันจันทร์" }),
-      mk(p1, { title: "คิวคุณทีน่าในวันงาน", status: "proposal", owner: "คุณแอ้ (ผู้ประสานงาน)",
+      mk(p1, { title: "คิวคุณทีน่าในวันงาน", status: "info", owner: "คุณแอ้ (ผู้ประสานงาน)",
         detail: "ทีมกำลังพิจารณาให้คุณทีน่าดูเฉพาะช่วง Spark Sync เวลา 13.30–14.30 น. ต้องเช็กว่าถือคิวเดิมไว้ได้ถึงวันไหน",
         updates: [{ at: now, text: "เดิมวางให้อยู่ทั้งช่วงบ่าย ตอนนี้เสนอให้ดูเฉพาะ Spark Sync 13.30–14.30 น." }] }),
-      mk(p1, { title: "สรุป Agenda วันงานส่งคณะทำงาน", status: "todo", owner: "พัตเตอร์", due: addDays(sat, -1) }),
-      mk(p1, { title: "รูปแบบบูธพันธมิตร", status: "decision", owner: "หัวหน้าฝ่าย", due: addDays(t0, 2),
+      mk(p1, { title: "สรุป Agenda วันงานส่งคณะทำงาน", status: "follow", owner: "พัตเตอร์", due: addDays(sat, -1) }),
+      mk(p1, { title: "รูปแบบบูธพันธมิตร", status: "urgent", owner: "หัวหน้าฝ่าย", due: addDays(t0, 2),
         detail: "มี 2 ทางเลือก: บูธเดี่ยวต่อพันธมิตร หรือโซนรวม รอหัวหน้าเลือกก่อนสั่งผลิต" }),
-      mk(p2, { title: "ธีมสื่อสารประจำเดือน", status: "confirmed", owner: "ทีมสื่อสาร",
+      mk(p2, { title: "ธีมสื่อสารประจำเดือน", status: "info", owner: "ทีมสื่อสาร",
         detail: "ตกลงในที่ประชุมแล้ว ใช้ธีมเดิมต่อเนื่อง" }),
-      mk(p2, { title: "คลิปสัมภาษณ์พนักงาน", status: "todo", owner: "ทีมสื่อสารองค์กร", due: addDays(t0, 7) }),
-      mk(p2, { title: "เพิ่มช่องทางเผยแพร่ใหม่", status: "proposal", owner: "พี่ในทีม", detail: "เสนอให้ทดลองเพิ่มช่องทางภายใน ยังไม่ตัดสิน" }),
+      mk(p2, { title: "คลิปสัมภาษณ์พนักงาน", status: "follow", owner: "ทีมสื่อสารองค์กร", due: addDays(t0, 7) }),
+      mk(p2, { title: "เพิ่มช่องทางเผยแพร่ใหม่", status: "info", owner: "พี่ในทีม", detail: "เสนอให้ทดลองเพิ่มช่องทางภายใน ยังไม่ตัดสิน" }),
     ],
     notes: {}, useNotes: {}, contacts: [], profile: DEFAULT_PROFILE, pin: "", theme: "",
   };
@@ -635,6 +644,7 @@ function seed() {
 let S = store.get(KEY, null) || seed();
 S.projects ||= []; S.tasks ||= []; S.notes ||= {}; S.useNotes ||= {}; S.contacts ||= [];
 if (S.profile == null) S.profile = DEFAULT_PROFILE;
+for (const t of S.tasks) { if (OLD_STATUS[t.status]) t.status = OLD_STATUS[t.status]; if (OLD_STATUS[t.prevStatus]) t.prevStatus = OLD_STATUS[t.prevStatus]; if (!ST[t.status]) t.status = "follow"; }
 function save() { if (!store.set(KEY, S)) toast("บันทึกในเครื่องไม่ได้ (พื้นที่เต็มหรือโหมดส่วนตัว)"); }
 
 let SERVER = { ai: false, pin: false, checked: false };
@@ -644,9 +654,10 @@ const selOf = (pid) => { if (!selected.has(pid)) selected.set(pid, new Set()); r
 const projOf = (id) => S.projects.find((p) => p.id === id);
 const tasksOf = (pid) => S.tasks.filter((t) => t.projectId === pid);
 const isOpen = (t) => t.status !== "done";
+// What to do first, as in Dusit Daily: urgent or overdue → has a date (soonest first) → follow up → for information → done.
+const rankOf = (t) => t.status === "done" ? 9 : t.status === "info" ? 3 : t.status === "urgent" || (t.due && daysFrom(t.due) < 0) ? 0 : t.due ? 1 : 2;
 const sortTasks = (a) => a.slice().sort((x, y) => {
-  const o = { decision: 0, waiting: 1, todo: 2, proposal: 3, confirmed: 4, done: 5 };
-  if (o[x.status] !== o[y.status]) return o[x.status] - o[y.status];
+  if (rankOf(x) !== rankOf(y)) return rankOf(x) - rankOf(y);
   if (x.due && y.due) return x.due.localeCompare(y.due) || (x.time || "").localeCompare(y.time || "");
   return x.due ? -1 : y.due ? 1 : (y.updatedAt || "").localeCompare(x.updatedAt || "");
 });
@@ -675,25 +686,25 @@ function render() {
 function renderHome() {
   $("todayLabel").textContent = thDate(today(), { long: true, year: true });
   const open = S.tasks.filter(isOpen);
-  const late = open.filter((t) => t.due && daysFrom(t.due) < 0 && t.status !== "confirmed").length;
-  const dec = open.filter((t) => t.status === "decision").length, wait = open.filter((t) => t.status === "waiting").length;
+  const late = open.filter((t) => t.due && daysFrom(t.due) < 0 && t.status !== "info").length;
+  const urg = open.filter((t) => t.status === "urgent").length, fol = open.filter((t) => t.status === "follow").length;
   const todayN = open.filter((t) => t.due === today()).length;
-  const headline = dec ? `มี ${dec} เรื่องที่ต้องขอให้ตัดสินใจ` : wait ? `รอคำตอบอยู่ ${wait} เรื่อง` : open.length ? `ยังเปิดอยู่ ${open.length} งาน` : "ไม่มีงานค้าง";
+  const headline = urg ? `มี ${urg} เรื่องด่วน ทำก่อน` : late ? `เลยกำหนด ${late} เรื่อง` : open.length ? `รอทำ ${urg + fol} งาน` : "ไม่มีงานค้าง";
   $("hero").innerHTML = `<div class="k">ภาพรวมทุกโครงการ</div><div class="big">${esc(headline)}</div>
     <div class="stats"><span class="st${late ? " hot" : ""}"><b class="num">${late}</b>เลยกำหนด</span><span class="st"><b class="num">${todayN}</b>ครบวันนี้</span>
-    <span class="st"><b class="num">${wait}</b>รอคำตอบ</span><span class="st"><b class="num">${dec}</b>รอตัดสินใจ</span></div>`;
+    <span class="st${urg ? " hot" : ""}"><b class="num">${urg}</b>ด่วน</span><span class="st"><b class="num">${fol}</b>ติดตาม</span></div>`;
   const ps = S.projects.filter((p) => !p.archived);
   $("projectList").innerHTML = ps.length ? ps.map((p) => {
     const ts = tasksOf(p.id).filter(isOpen);
     const c = (s) => ts.filter((t) => t.status === s).length;
-    const nx = sortTasks(ts.filter((t) => t.due && t.status !== "confirmed")).sort((a, b) => a.due.localeCompare(b.due))[0];
-    const counts = ["decision", "waiting", "todo", "proposal"].filter((s) => c(s)).map((s) => `<span class="tag ${s}">${ST[s]} ${c(s)}</span>`).join("");
+    const nx = sortTasks(ts.filter((t) => t.due && t.status !== "info")).sort((a, b) => a.due.localeCompare(b.due))[0];
+    const counts = ["urgent", "follow", "info"].filter((s) => c(s)).map((s) => `<span class="tag ${s}">${ST[s]} ${c(s)}</span>`).join("");
     return `<button class="pcard" data-p="${p.id}" style="--acc:${esc(p.color || COLORS[0])}">
       <h3><i></i>${esc(p.name)}</h3><p>${esc(p.desc || "")}${p.desc ? " · " : ""}เปิดอยู่ ${ts.length} งาน</p>
       <div class="counts">${counts || '<span class="tag">ไม่มีงานค้าง</span>'}</div>
       ${nx ? `<div class="next">ถัดไป: <b>${esc(nx.title)}</b> · ${dueBadge(nx)}</div>` : ""}</button>`;
   }).join("") : `<div class="empty">ยังไม่มีโครงการ กด + มุมขวาบนเพื่อเพิ่ม</div>`;
-  const soon = sortTasks(S.tasks.filter((t) => isOpen(t) && t.status !== "confirmed" && t.due && daysFrom(t.due) <= 7 && projOf(t.projectId) && !projOf(t.projectId).archived))
+  const soon = sortTasks(S.tasks.filter((t) => isOpen(t) && t.status !== "info" && t.due && daysFrom(t.due) <= 7 && projOf(t.projectId) && !projOf(t.projectId).archived))
     .sort((a, b) => a.due.localeCompare(b.due) || (a.time || "").localeCompare(b.time || ""));
   $("dueWrap").hidden = !soon.length;
   $("dueList").innerHTML = soon.slice(0, 8).map((t) => `<button class="duecard" data-t="${t.id}">
@@ -702,8 +713,8 @@ function renderHome() {
 }
 function taskCard(t, sel) {
   const last = t.updates?.length ? t.updates[t.updates.length - 1].text : t.detail;
-  return `<div class="task${sel.has(t.id) ? " sel" : ""}${t.status === "done" ? " isdone" : ""}" data-t="${t.id}">
-    <button class="pick" data-pick="${t.id}" aria-label="เลือกงานนี้" aria-pressed="${sel.has(t.id)}"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span></button>
+  return `<div class="task${t.status === "done" ? " isdone" : ""}${t.status === "urgent" ? " urgent" : ""}" data-t="${t.id}">
+    <button class="pick" data-done="${t.id}" aria-label="${t.status === "done" ? "ยังไม่เสร็จ" : "ติ๊กว่าเสร็จแล้ว"}" aria-pressed="${t.status === "done"}"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span></button>
     <button class="tbody" data-edit="${t.id}">
       <div class="tt">${esc(t.title)}</div>
       <div class="tmeta"><span class="tag ${t.status}">${ST[t.status]}</span>${t.owner ? `<span>${esc(t.owner)}</span>` : ""}${dueBadge(t)}</div>
@@ -721,14 +732,14 @@ function timelineHTML(tasks, sel) {
   if (tlEvents) for (const t of tasks) for (const u of (t.updates || []).slice(-6)) put(u.at.slice(0, 10), { ev: true, t, text: u.text });
   days.has(t0) || days.set(t0, { tasks: [], events: [] });
   const keys = [...days.keys()].sort();
-  const openN = tasks.filter((t) => isOpen(t) && t.due).length, lateN = tasks.filter((t) => isOpen(t) && t.status !== "confirmed" && t.due && t.due < t0).length;
+  const openN = tasks.filter((t) => isOpen(t) && t.due).length, lateN = tasks.filter((t) => isOpen(t) && t.status !== "info" && t.due && t.due < t0).length;
   $("tlNote").textContent = `${openN} งานมีกำหนด${lateN ? ` · เลยกำหนด ${lateN}` : ""}${nodate.filter(isOpen).length ? ` · ไม่มีกำหนด ${nodate.filter(isOpen).length}` : ""}`;
   let month = "", html = "";
   for (const d of keys) {
     const m = d.slice(0, 7);
     if (m !== month) { month = m; const dd = parseD(d); html += `<div class="tl-month">${TH_MONTH_FULL[dd.getMonth()]} ${dd.getFullYear() + 543}</div>`; }
     const g = days.get(d), n = daysFrom(d);
-    const pending = g.tasks.filter((t) => isOpen(t) && t.status !== "confirmed");
+    const pending = g.tasks.filter((t) => isOpen(t) && t.status !== "info");
     const cls = d === t0 ? "today" : n < 0 && pending.length ? "late" : n < 0 ? "past" : "";
     const rel = n === 0 ? "วันนี้" : n === 1 ? "พรุ่งนี้" : n === -1 ? "เมื่อวาน" : n < 0 ? (pending.length ? `เลยมา ${-n} วัน` : `${-n} วันก่อน`) : `อีก ${n} วัน`;
     const items = sortTasks(g.tasks).sort((a, b) => (a.time || "99").localeCompare(b.time || "99"));
@@ -746,7 +757,7 @@ function isoWeek(d) {
   const day = x.getUTCDay() || 7; x.setUTCDate(x.getUTCDate() + 4 - day);
   return Math.ceil(((x - Date.UTC(x.getUTCFullYear(), 0, 1)) / 864e5 + 1) / 7);
 }
-const STATUS_COLOR = { todo: "var(--blue)", waiting: "var(--amber)", decision: "var(--red)", proposal: "var(--violet)", confirmed: "var(--brand)", done: "var(--muted)" };
+const STATUS_COLOR = { urgent: "var(--red)", follow: "var(--amber)", info: "var(--brand)", done: "var(--muted)" };
 /** The line at the top: tasks marked as milestones (or every dated task if none are marked) on a week scale. */
 function milestoneHTML(tasks) {
   const dated = tasks.filter((t) => t.due);
@@ -771,7 +782,7 @@ function milestoneHTML(tasks) {
     if (dd.getDay() === 1 && ppd * 7 >= 24) grid += `<div class="ms-wk" style="left:${x(d)}px"><span>W${isoWeek(dd)}</span></div>`;
     if (dd.getDate() === 1 || i === 0) grid += `<div class="ms-mon" style="left:${x(d)}px">${TH_MON[dd.getMonth()]}</div>`;
   }
-  const RANK = { decision: 0, waiting: 1, todo: 2, proposal: 3, confirmed: 4, done: 5 };
+  const RANK = { urgent: 0, follow: 1, info: 2, done: 3 };
   const lanes = [-1e9, -1e9, -1e9]; let dots = "";
   for (const g of groups) {
     const lead = g.tasks.slice().sort((a, b) => RANK[a.status] - RANK[b.status])[0];
@@ -779,7 +790,7 @@ function milestoneHTML(tasks) {
     let lane = lanes.findIndex((l) => px - l >= 114);
     if (lane < 0) lane = lanes.indexOf(Math.min(...lanes));
     lanes[lane] = px;
-    const late = g.tasks.some((t) => isOpen(t) && t.status !== "confirmed") && g.due < t0;
+    const late = g.tasks.some((t) => isOpen(t) && t.status !== "info") && g.due < t0;
     const allDone = g.tasks.every((t) => t.status === "done");
     const lx = Math.min(Math.max(px, 55), W - 55);
     const name = `${lead.title}${g.tasks.length > 1 ? ` +${g.tasks.length - 1}` : ""}`;
@@ -793,8 +804,8 @@ function milestoneHTML(tasks) {
 }
 function tlCard(t, sel) {
   const faded = t.status === "done";
-  return `<div class="task tlc${sel.has(t.id) ? " sel" : ""}${faded ? " isdone past" : ""}" data-t="${t.id}">
-    <button class="pick" data-pick="${t.id}" aria-label="เลือกงานนี้" aria-pressed="${sel.has(t.id)}"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span></button>
+  return `<div class="task tlc${faded ? " isdone past" : ""}${t.status === "urgent" ? " urgent" : ""}" data-t="${t.id}">
+    <button class="pick" data-done="${t.id}" aria-label="${t.status === "done" ? "ยังไม่เสร็จ" : "ติ๊กว่าเสร็จแล้ว"}" aria-pressed="${t.status === "done"}"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span></button>
     <button class="tbody" data-edit="${t.id}"><div class="tt">${esc(t.title)}</div>
       <div class="tmeta"><span class="tag ${t.status}">${ST[t.status]}</span>${t.time ? `<span class="due">${esc(thTime(t.time))}</span>` : ""}${t.owner ? `<span>${esc(t.owner)}</span>` : ""}</div></button></div>`;
 }
@@ -804,22 +815,22 @@ function renderProject() {
   $("pName").textContent = p.name;
   $("pDesc").textContent = p.desc || "โครงการ";
   const all = tasksOf(p.id), sel = selOf(p.id);
-  for (const id of [...sel]) if (!all.some((t) => t.id === id)) sel.delete(id);
+  for (const id of [...sel]) if (id !== "__none__" && !all.some((t) => t.id === id)) sel.delete(id);
   const open = all.filter(isOpen);
-  const fs = [["open", "ยังไม่เสร็จ", open.length], ...STATUSES.filter(([k]) => k !== "done").map(([k, l]) => [k, l, all.filter((t) => t.status === k).length]).filter((f) => f[2])];
-  if (!fs.some((f) => f[0] === filter)) filter = "open";
+  const fs = [["open", "รอทำ", open.length], ["done", "เสร็จแล้ว", all.length - open.length]];
+  if (filter !== "done") filter = "open";
   $("filters").innerHTML = fs.map(([k, l, n]) => `<button data-f="${k}" aria-pressed="${filter === k}">${l} <b class="num">${n}</b></button>`).join("");
-  const shown = sortTasks(filter === "open" ? open : all.filter((t) => t.status === filter));
+  const shown = filter === "open" ? sortTasks(open) : all.filter((t) => !isOpen(t)).sort((a, b) => (b.doneAt || b.updatedAt || "").localeCompare(a.doneAt || a.updatedAt || ""));
   const tl = pmode === "timeline";
   document.querySelectorAll("#pMode button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.m === pmode)));
   $("tlOpts").hidden = !tl;
   $("taskList").className = tl ? "" : "list";
   $("taskList").innerHTML = !all.length ? `<div class="empty">ยังไม่มีงานในโครงการนี้<br>กดปุ่ม "+ งาน" ด้านล่าง หรือวางโน้ตประชุมไว้ด้านล่างแล้วกดสรุปงานได้เลย</div>`
     : tl ? timelineHTML(filter === "open" ? all : shown, sel)
-    : shown.length ? shown.map((t) => taskCard(t, sel)).join("") : `<div class="empty">ไม่มีงานในสถานะนี้</div>`;
+    : shown.length ? shown.map((t) => taskCard(t, sel)).join("") : `<div class="empty">${filter === "open" ? "ไม่มีงานค้าง เยี่ยมครับ" : "ยังไม่มีงานที่เสร็จ"}</div>`;
   const ms = $("msScroll"); if (ms) ms.scrollLeft = Math.max(0, +ms.dataset.today - ms.clientWidth / 3);
   const done = sortTasks(all.filter((t) => t.status === "done"));
-  $("doneFold").hidden = tl || !done.length || filter !== "open";
+  $("doneFold").hidden = true;
   $("doneSum").textContent = `เสร็จแล้ว ${done.length} งาน`;
   $("doneList").innerHTML = done.map((t) => taskCard(t, sel)).join("");
   const n = S.notes[p.id] || "";
@@ -832,6 +843,7 @@ const useNotesFor = (pid) => !!(S.notes[pid] || "").trim() && S.useNotes[pid] !=
 function chosen(pid) {
   const sel = selOf(pid), all = tasksOf(pid);
   const tasks = sel.size ? sortTasks(all.filter((t) => sel.has(t.id))) : sortTasks(all.filter(isOpen));
+  for (const id of [...sel]) if (id !== "__none__" && !all.some((t) => t.id === id)) sel.delete(id);
   const notes = useNotesFor(pid) ? S.notes[pid] : "";
   return { tasks, notes, picked: sel.size > 0 };
 }
@@ -876,7 +888,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("shee
 
 /* ---------- task editor ---------- */
 function editTask(id, pid) {
-  const t = id ? S.tasks.find((x) => x.id === id) : { id: "", projectId: pid || curP || S.projects[0]?.id, title: "", status: "todo", owner: "", due: "", time: "", detail: "", updates: [] };
+  const t = id ? S.tasks.find((x) => x.id === id) : { id: "", projectId: pid || curP || S.projects[0]?.id, title: "", status: "follow", owner: "", due: "", time: "", detail: "", updates: [] };
   if (!t || !S.projects.length) { if (!S.projects.length) editProject(); return; }
   const projOpts = S.projects.filter((p) => !p.archived || p.id === t.projectId).map((p) => `<option value="${p.id}"${p.id === t.projectId ? " selected" : ""}>${esc(p.name)}</option>`).join("");
   openSheet(`<h3>${id ? "แก้ไขงาน" : "เพิ่มงาน"}</h3>
@@ -895,7 +907,7 @@ function editTask(id, pid) {
     <p class="err" id="tErr" hidden></p>
     <div class="row"><button class="btn pri" id="tSave">บันทึก</button>${id ? `<button class="btn danger sm" id="tDel">ลบ</button>` : ""}</div>`);
   let status = t.status;
-  const hint = { todo: "งานที่ต้องมีคนลงมือทำ", waiting: "ส่งเรื่องไปแล้ว รอคนอื่นตอบ", decision: "ต้องขอให้ผู้บริหาร/ผู้มีอำนาจตัดสิน", proposal: "ยังหารืออยู่ ยังไม่ใช่มติ", confirmed: "มติหรือข้อสรุปที่ยืนยันแล้ว", done: "ปิดงานแล้ว" };
+  const hint = { urgent: "ต้องทำทันที หรือมีคนรออยู่", follow: "ต้องทำ หรือรอคำตอบ ตามให้จบ", info: "ข้อมูล มติ หรือข้อเสนอที่ควรรู้ ไม่ต้องลงมือ", done: "ปิดงานแล้ว" };
   const setS = (s) => { status = s; document.querySelectorAll("#tStatus .chip").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.s === s))); $("tOwnerLab").textContent = OWNER_LABEL[s]; $("tStatusHint").textContent = hint[s]; };
   setS(status);
   $("tStatus").onclick = (e) => { const b = e.target.closest("[data-s]"); if (b) setS(b.dataset.s); };
@@ -925,9 +937,17 @@ function patchTask(t, nu, upd) {
   Object.assign(t, nu, { updates, updatedAt: now, sample: t.sample && !log.length && !upd });
   return prev;
 }
+/** Tick the circle: done ↔ back to what it was before. */
+function toggleDone(id) {
+  const t = S.tasks.find((x) => x.id === id); if (!t) return;
+  const done = t.status !== "done";
+  const prev = patchTask(t, done ? { status: "done", prevStatus: t.status, doneAt: new Date().toISOString() } : { status: t.prevStatus && t.prevStatus !== "done" ? t.prevStatus : "follow", doneAt: "" });
+  save(); render();
+  toast(done ? `เสร็จแล้ว: ${t.title}` : `เปิดงานใหม่: ${t.title}`, () => { restoreTask(prev); save(); render(); });
+}
 function newTask(nu, upd) {
   const now = new Date().toISOString();
-  const t = { id: uid(), status: "todo", owner: "", due: "", time: "", detail: "", ...nu, updates: upd ? [{ at: now, text: upd }] : [], createdAt: now, updatedAt: now };
+  const t = { id: uid(), status: "follow", owner: "", due: "", time: "", detail: "", ...nu, updates: upd ? [{ at: now, text: upd }] : [], createdAt: now, updatedAt: now };
   S.tasks.push(t);
   return t;
 }
@@ -994,37 +1014,33 @@ function line(t, opt = {}) {
   return bits.join(" — ");
 }
 function buildSummary(p, tasks, audience) {
-  const by = (s) => tasks.filter((t) => t.status === s);
+  const by = (s) => sortTasks(tasks.filter((t) => t.status === s));
   const num = (arr, f) => arr.map((t, i) => `${i + 1}. ${f(t)}`).join("\n");
   const sub = (t) => t.detail ? `\n   ${t.detail}` : "";
   const out = [`สรุป ${p.name} · ${thDate(today())}`];
-  const actions = sortTasks(tasks.filter((t) => ["todo", "confirmed", "waiting"].includes(t.status) && (t.status !== "confirmed" || t.owner || t.due)));
+  const late = tasks.filter((t) => isOpen(t) && t.status !== "info" && t.due && daysFrom(t.due) < 0);
+  const hot = sortTasks(tasks.filter((t) => t.status === "urgent" || late.includes(t)));
+  const fol = by("follow").filter((t) => !hot.includes(t));
   const changed = tasks.filter((t) => changesOf(t).length);
   const sec = (title, body) => body && out.push(`${title}\n${body}`);
+  const who = (t) => t.owner || "[ยังไม่ระบุผู้รับผิดชอบ]", when = (t) => t.due ? dueText(t) : "[ยังไม่มีกำหนด]";
   if (audience === "boss") {
-    const dec = by("decision"), wait = by("waiting"), late = tasks.filter((t) => isOpen(t) && t.due && daysFrom(t.due) < 0 && t.status !== "confirmed");
     const lead = [];
-    if (dec.length) lead.push(`มี ${dec.length} เรื่องที่ต้องขอให้พิจารณา`);
-    if (by("confirmed").length) lead.push(`ยืนยันแล้ว ${by("confirmed").length} เรื่อง`);
-    if (wait.length) lead.push(`รอคำตอบ ${wait.length} เรื่อง`);
-    if (late.length) lead.push(`เลยกำหนด ${late.length} เรื่อง`);
+    if (hot.length) lead.push(`ด่วน ${hot.length} เรื่อง`);
+    if (fol.length) lead.push(`ติดตาม ${fol.length} เรื่อง`);
+    if (by("done").length) lead.push(`เสร็จแล้ว ${by("done").length} เรื่อง`);
     sec("📌 ผลล่าสุด", lead.length ? lead.join(" · ") : "ยังไม่มีความคืบหน้าที่ต้องรายงาน");
-    sec("🟠 ต้องขอให้พิจารณา/ตัดสินใจ", num(dec, (t) => `${t.title}${t.owner ? ` (ขอให้ ${t.owner} ตัดสิน)` : ""}${t.due ? ` ขอคำตอบภายใน ${dueText(t)}` : ""}${sub(t)}`));
-    sec("✅ ยืนยันแล้ว", num(by("confirmed"), (t) => `${t.title}${sub(t)}`));
-    sec("💬 ข้อเสนอที่กำลังหารือ (ยังไม่ยืนยัน)", num(by("proposal"), (t) => `${t.title}${t.owner ? ` (เสนอโดย ${t.owner})` : ""}${sub(t)}`));
-    sec("⏳ รอคำตอบ", num(wait, (t) => `รอ ${t.owner || "[ยังไม่ระบุ]"}: ${t.title}${t.due ? ` ภายใน ${dueText(t)}` : ""}`));
-    sec("🗓 ใครทำอะไร ภายในเมื่อไร", num(actions.filter((t) => t.status !== "waiting"), (t) => `${t.owner || "[ยังไม่ระบุผู้รับผิดชอบ]"} — ${t.title} — ${t.due ? dueText(t) : "[ยังไม่มีกำหนด]"}`));
+    sec("🔴 เรื่องด่วน", num(hot, (t) => `${t.title} — ${who(t)} — ${when(t)}${late.includes(t) ? " (เลยกำหนด)" : ""}${sub(t)}`));
+    sec("🗓 ใครทำอะไร ภายในเมื่อไร", num(fol, (t) => `${who(t)} — ${t.title} — ${when(t)}`));
+    sec("💬 แจ้งให้ทราบ", num(by("info"), (t) => `${t.title}${sub(t)}`));
   } else {
     const people = new Map();
-    for (const t of actions.filter((t) => t.status !== "waiting")) { const k = t.owner || "[ยังไม่ระบุผู้รับผิดชอบ]"; people.has(k) || people.set(k, []); people.get(k).push(t); }
-    sec("🙋 งานที่แต่ละคนต้องรับไปทำ", [...people].map(([who, ts]) => `▸ ${who}\n${ts.map((t) => `• ${t.title} — ${t.due ? dueText(t) : "[ยังไม่มีกำหนด]"}`).join("\n")}`).join("\n\n"));
-    sec("✅ ตกลงแล้ว", num(by("confirmed"), (t) => t.title));
-    sec("🟠 รอหัวหน้าตัดสิน", num(by("decision"), (t) => t.title));
-    sec("💬 ยังหารืออยู่ (ยังไม่ต้องทำ)", num(by("proposal"), (t) => t.title));
-    sec("⏳ รอคำตอบ", num(by("waiting"), (t) => `รอ ${t.owner || "[ยังไม่ระบุ]"}: ${t.title}${t.due ? ` ภายใน ${dueText(t)}` : ""}`));
+    for (const t of [...hot, ...fol]) { const k = who(t); people.has(k) || people.set(k, []); people.get(k).push(t); }
+    sec("🙋 งานที่แต่ละคนต้องรับไปทำ", [...people].map(([w, ts]) => `▸ ${w}\n${ts.map((t) => `• ${t.status === "urgent" ? "[ด่วน] " : ""}${t.title} — ${when(t)}`).join("\n")}`).join("\n\n"));
+    sec("💬 แจ้งให้ทราบ", num(by("info"), (t) => t.title));
   }
   sec("🔁 เปลี่ยนจากเดิม", num(changed, (t) => `${t.title}: ${changesOf(t).join(" / ")}`));
-  if (tasks.some((t) => t.status === "done")) sec("☑️ เสร็จแล้ว", num(by("done"), (t) => t.title));
+  sec("☑️ เสร็จแล้ว", num(by("done"), (t) => t.title));
   return out.join("\n\n");
 }
 
@@ -1109,18 +1125,36 @@ async function copyOut(idp) {
   if (left && !confirm(`ยังมีช่องว่าง ${[...new Set(left)].join(" ")}\nคัดลอกไปก่อนเลยไหม?`)) return;
   toast((await copyText(text)) ? "คัดลอกข้อความแล้ว" : "คัดลอกไม่ได้ ลองกดค้างที่ข้อความแล้วเลือกคัดลอก");
 }
+/** Which tasks go into the summary / LINE draft: every open task is ticked unless some were picked. */
 function sourceList(tasks, notes) {
-  const items = tasks.slice(0, 6).map((t) => `<li>${esc(t.title)} <span class="tag ${t.status}">${ST[t.status]}</span></li>`).join("");
-  return `<div class="src">ใช้ข้อมูลจาก: ${tasks.length} งาน${notes ? ` + โน้ต ${notes.length.toLocaleString()} ตัวอักษร` : ""}${items ? `<ul>${items}${tasks.length > 6 ? `<li>และอีก ${tasks.length - 6} งาน</li>` : ""}</ul>` : ""}</div>`;
+  const ids = new Set(tasks.map((t) => t.id));
+  const pool = sortTasks(tasksOf(curP).filter((t) => isOpen(t) || ids.has(t.id)));
+  return `<details class="src" id="srcBox"><summary>ใช้ข้อมูลจาก <b id="srcN">${tasks.length}</b> งาน${notes ? ` + โน้ต ${notes.length.toLocaleString()} ตัวอักษร` : ""} · <u>เลือกงาน</u></summary>
+    ${pool.map((t) => `<label class="pickrow"><input type="checkbox" data-src="${t.id}"${ids.has(t.id) ? " checked" : ""}><span>${esc(t.title)}<span class="tag ${t.status}">${ST[t.status]}</span></span></label>`).join("") || '<p class="note">ยังไม่มีงานในโครงการนี้</p>'}</details>`;
+}
+/** Tick/untick in the sheet → remember the pick for this project and hand back the new list. */
+function bindSource(onChange) {
+  const box = $("srcBox"); if (!box) return;
+  box.addEventListener("change", () => {
+    const picked = [...box.querySelectorAll("[data-src]")].filter((x) => x.checked).map((x) => x.dataset.src);
+    const sel = selOf(curP); sel.clear();
+    const openIds = tasksOf(curP).filter(isOpen).map((t) => t.id);
+    const same = picked.length === openIds.length && openIds.every((id) => picked.includes(id));
+    if (!same) picked.forEach((id) => sel.add(id));
+    if (!picked.length) sel.add("__none__");
+    $("srcN").textContent = picked.length;
+    onChange(chosen(curP));
+    renderActbar();
+  });
 }
 
 /* ---------- summary sheet ---------- */
 let lastAudience = store.get("pd-aud", "boss");
 function openSummary(audience) {
   if (audience) lastAudience = audience;
-  const p = projOf(curP), { tasks, notes } = chosen(curP);
+  const p = projOf(curP); let { tasks, notes } = chosen(curP);
   openSheet(`<h3>สรุปงาน</h3><p class="sub">${esc(p.name)}</p>
-    <div class="seg" id="audSeg"><button data-a="boss">สรุปให้หัวหน้า<small>ขึ้นต้นด้วยผลล่าสุด/เรื่องที่ต้องตัดสินใจ</small></button><button data-a="team">สรุปให้ทีม<small>ขึ้นต้นด้วยงานที่แต่ละคนต้องทำ</small></button></div>
+    <div class="seg" id="audSeg"><button data-a="boss">สรุปให้หัวหน้า<small>ผลล่าสุดและเรื่องด่วนก่อน</small></button><button data-a="team">สรุปให้ทีม<small>งานของแต่ละคนก่อน</small></button></div>
     ${sourceList(tasks, notes)}
     ${outBox("sm")}`);
   $("smActs").innerHTML = `<button class="btn pri" id="smCopy">คัดลอกข้อความ</button><button class="btn line" id="smToLine">ร่าง LINE ต่อ</button><button class="btn sec sm" id="smAgain" aria-label="สรุปใหม่">สรุปใหม่</button>`;
@@ -1153,6 +1187,7 @@ function openSummary(audience) {
   $("audSeg").onclick = (e) => { const b = e.target.closest("[data-a]"); if (b) run(b.dataset.a); };
   $("smCopy").onclick = () => copyOut("sm");
   $("smAgain").onclick = () => run(lastAudience);
+  bindSource((c) => { tasks = c.tasks; notes = c.notes; run(lastAudience); });
   $("smToLine").onclick = () => openLine({ recipient: lastAudience === "boss" ? "boss" : "committee", purpose: "progress" });
   run(lastAudience);
 }
@@ -1160,7 +1195,7 @@ function openSummary(audience) {
 /* ---------- LINE sheet ---------- */
 let lineOpt = store.get("pd-line", { recipient: "senior", name: "", firstContact: false, purpose: "follow", format: "short", replyBy: "", reason: "", oldTime: "", newTime: "", pending: true, extra: "" });
 function openLine(preset) {
-  const p = projOf(curP), { tasks, notes } = chosen(curP);
+  const p = projOf(curP); let { tasks, notes } = chosen(curP);
   const o = { ...lineOpt, replyBy: "", reason: "", oldTime: "", newTime: "", extra: "", ...(preset || {}) };
   // Defaults from the chosen tasks: the earliest due date, the reason and the owner of a single task
   const withDue = tasks.filter((t) => t.due && isOpen(t)).sort((a, b) => a.due.localeCompare(b.due));
@@ -1173,9 +1208,7 @@ function openLine(preset) {
       if (/^พี่/.test(own)) { o.recipient = "senior"; o.name = own.replace(/^พี่/, ""); }
       else if (/^คุณ/.test(own)) { o.recipient = "external"; o.name = own.replace(/^คุณ/, ""); }
     }
-    if (t.status === "waiting" && !preset?.purpose) o.purpose = "follow";
-    if (t.status === "decision" && !preset?.purpose) { o.purpose = "consider"; o.recipient = "boss"; }
-    if (t.status === "proposal" && !preset?.purpose) o.purpose = "confirm";
+    if (t.status === "info" && !preset?.purpose) o.purpose = "progress";
   }
   if (o.recipient === "committee" && !preset?.format) o.format = "list";
   const recent = S.contacts.slice(0, 8);
@@ -1247,6 +1280,7 @@ function openLine(preset) {
     draw(); setOpen();
   };
   $("lnCopy").onclick = () => copyOut("ln");
+  bindSource((c) => { tasks = c.tasks; notes = c.notes; });
 }
 function callName(c) {
   const n = c.name;
@@ -1282,7 +1316,7 @@ $("navReactor").innerHTML = reactor();
 
 let CHAT = [], helpBusy = false;
 const prefs = store.get("pd-prefs", { tts: false });
-const SUGGEST = ["มีอะไรค้างบ้าง", "รอคำตอบจากใครอยู่", "เรื่องไหนต้องให้หัวหน้าตัดสิน", "งานใกล้กำหนดสัปดาห์นี้", "สรุปให้หัวหน้า", "เพิ่มงาน: "];
+const SUGGEST = ["มีอะไรค้างบ้าง", "มีอะไรด่วนบ้าง", "ต้องตามใครอยู่", "งานใกล้กำหนดสัปดาห์นี้", "สรุปให้หัวหน้า", "เพิ่มงาน: "];
 
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const voice = {
@@ -1335,10 +1369,10 @@ function speak(text) {
 const activeTasks = () => S.tasks.filter((t) => projOf(t.projectId) && !projOf(t.projectId).archived);
 function hudBriefing() {
   const open = activeTasks().filter(isOpen);
-  const wait = open.filter((t) => t.status === "waiting").length, dec = open.filter((t) => t.status === "decision").length;
-  const late = open.filter((t) => t.due && daysFrom(t.due) < 0 && t.status !== "confirmed").length;
+  const urg = open.filter((t) => t.status === "urgent").length, fol = open.filter((t) => t.status === "follow").length;
+  const late = open.filter((t) => t.due && daysFrom(t.due) < 0 && t.status !== "info").length;
   return `<div class="bubble bot"><span class="who">PUTTER HELP · ${esc(thDate(today()))}</span>
-    <div class="brief-grid"><div${late ? ' class="hot"' : ""}><b class="num">${late}</b><span>เลยกำหนด</span></div><div><b class="num">${wait}</b><span>รอคำตอบ</span></div><div><b class="num">${dec}</b><span>รอตัดสินใจ</span></div></div>
+    <div class="brief-grid"><div${late ? ' class="hot"' : ""}><b class="num">${late}</b><span>เลยกำหนด</span></div><div${urg ? ' class="hot"' : ""}><b class="num">${urg}</b><span>ด่วน</span></div><div><b class="num">${fol}</b><span>ติดตาม</span></div></div>
     <div style="color:var(--hud-dim);font-size:14px">${view === "project" && projOf(curP) ? `กำลังดู ${esc(projOf(curP).name)} · ` : ""}สั่งได้เลยครับ เช่น "พี่นัทยืนยัน Artwork แล้ว" หรือ "ร่างไลน์ตามคุณแอ้เรื่องคิวคุณทีน่า"</div></div>`;
 }
 function openHelp(autoStart) {
@@ -1487,7 +1521,7 @@ function applyActions(acts) {
     if (type === "add") {
       const p = pickProject(a.project) || (S.projects.length === 1 ? S.projects[0] : null);
       if (!p || !String(a.title || "").trim()) { out.push({ kind: "miss", label: "ยังไม่รู้ว่าจะเพิ่มในโครงการไหน" }); continue; }
-      const n = newTask({ projectId: p.id, title: String(a.title).trim().slice(0, 200), status: ST[a.status] ? a.status : "todo", owner: String(a.owner || "").slice(0, 60),
+      const n = newTask({ projectId: p.id, title: String(a.title).trim().slice(0, 200), status: ST[a.status] ? a.status : "follow", owner: String(a.owner || "").slice(0, 60),
         due: isYmd(a.due) ? a.due : "", time: isHm(a.time) ? a.time : "", detail: String(a.detail || "").slice(0, 800) }, String(a.update || "").trim());
       out.push({ kind: "add", label: `เพิ่มใน ${p.name}: ${n.title}${n.owner ? " · " + n.owner : ""}${n.due ? " · " + dueText(n) : ""} · ${ST[n.status]}`,
         undo: () => { S.tasks = S.tasks.filter((x) => x.id !== n.id); } });
@@ -1626,12 +1660,11 @@ function localHelp(text) {
   const open = sortTasks(pool.filter(isOpen));
   const isQ = /\?|อะไร|ไหน|บ้าง|กี่|ใคร|ยังไง|หรือยัง/.test(text);
   if (isQ && !/^(สรุป|ร่าง|ส่ง)/.test(text)) {
-    if (/ตัดสิน/.test(text)) return { reply: listReply("รอตัดสินใจ", open.filter((t) => t.status === "decision")), actions: [] };
-    if (/รอ(คำ)?ตอบ|รอใคร|รอ.*อยู่/.test(text)) return { reply: listReply("รอคำตอบ", open.filter((t) => t.status === "waiting")), actions: [] };
-    if (/ข้อเสนอ|หารือ|พิจารณา/.test(text)) return { reply: listReply("ข้อเสนอที่ยังหารืออยู่", open.filter((t) => t.status === "proposal")), actions: [] };
-    if (/ยืนยัน|ตกลง|มติ/.test(text)) return { reply: listReply("ยืนยันแล้ว", open.filter((t) => t.status === "confirmed")), actions: [] };
-    if (/กำหนด|สัปดาห์|อาทิตย์นี้|ด่วน/.test(text)) return { reply: listReply("ใกล้กำหนดใน 7 วัน", open.filter((t) => t.due && daysFrom(t.due) <= 7 && t.status !== "confirmed").sort((a, b) => a.due.localeCompare(b.due))), actions: [] };
-    return { reply: listReply("ยังไม่เสร็จ", open.filter((t) => t.status !== "confirmed")), actions: [] };
+    if (/ด่วน/.test(text)) return { reply: listReply("ด่วน", open.filter((t) => t.status === "urgent" || (t.due && daysFrom(t.due) < 0 && t.status !== "info"))), actions: [] };
+    if (/ตาม|รอ|ใคร/.test(text)) return { reply: listReply("ติดตาม", open.filter((t) => t.status === "follow")), actions: [] };
+    if (/แจ้ง|ทราบ|ข้อเสนอ|ยืนยัน|ตกลง|มติ/.test(text)) return { reply: listReply("แจ้งให้ทราบ", open.filter((t) => t.status === "info")), actions: [] };
+    if (/กำหนด|สัปดาห์|อาทิตย์นี้/.test(text)) return { reply: listReply("ใกล้กำหนดใน 7 วัน", open.filter((t) => t.due && daysFrom(t.due) <= 7 && t.status !== "info").sort((a, b) => a.due.localeCompare(b.due))), actions: [] };
+    return { reply: listReply("รอทำ", open.filter((t) => t.status !== "info")), actions: [] };
   }
   const blank = { id: "", project: "", title: "", status: "", owner: "", due: "", time: "", detail: "", update: "" };
   if (/^\s*สรุป/.test(text)) {
@@ -1648,7 +1681,7 @@ function localHelp(text) {
     const recipient = /หัวหน้า|ผู้บริหาร/.test(text) ? "boss" : /กลุ่ม|คณะทำงาน|ทีม/.test(text) ? "committee" : who?.prefix === "คุณ" ? "external" : "senior";
     return { reply: "เปิดหน้าร่าง LINE ให้แล้วครับ ตรวจแล้วกดร่างได้เลย", actions: [{ ...blank, type: "line", project: p, id: ts.filter((t) => t.projectId === p).map((t) => t.id).join(","), recipient, name: who?.name || "", purpose, format: recipient === "committee" ? "list" : "short" }] };
   }
-  const status = /เสร็จ|เรียบร้อย|ส่งแล้ว|ปิดงาน/.test(text) ? "done" : /ยืนยันแล้ว|ตกลงแล้ว|อนุมัติแล้ว|ได้ข้อสรุป/.test(text) ? "confirmed" : /รอ.*ตอบ|ส่งไปแล้ว รอ/.test(text) ? "waiting" : "";
+  const status = /เสร็จ|เรียบร้อย|ปิดงาน/.test(text) || (/ยืนยัน|ตอบ|ส่ง|อนุมัติ|ตกลง|ได้รับ/.test(text) && /แล้ว/.test(text)) ? "done" : /ด่วน/.test(text) ? "urgent" : "";
   const hits = findTasks(text, pool);
   if (status && hits.length === 1) return { reply: `อัปเดตแล้วครับ`, actions: [{ ...blank, type: "update", id: hits[0].id, status }] };
   if (status && hits.length > 1) return { reply: `เจอหลายงานที่ตรงกันครับ บอกชื่องานให้ชัดขึ้นหน่อย\n` + hits.slice(0, 5).map((t) => "• " + t.title).join("\n"), actions: [] };
@@ -1656,7 +1689,7 @@ function localHelp(text) {
   const title = text.replace(/^\s*(เพิ่มงาน|จดไว้|จด|งาน)\s*[:：]?\s*/, "")
     .replace(/\s*(ภายใน|ก่อน)?\s*(วันนี้|พรุ่งนี้|มะรืน(นี้)?)\s*(นะ|ครับ)?\s*$/, "").trim().slice(0, 200);
   if (title.length < 3) return { reply: "ยังไม่เข้าใจครับ ลองพิมพ์ชื่องาน หรือถามว่า \"มีอะไรค้างบ้าง\"", actions: [] };
-  const draft = { title, status: /รอ/.test(text) ? "waiting" : /เสนอ/.test(text) ? "proposal" : "todo", owner: who?.full || "", due: when.due || "", time: when.time || "" };
+  const draft = { title, status: /ด่วน/.test(text) ? "urgent" : /แจ้ง(ให้)?ทราบ|เสนอ|มติ/.test(text) ? "info" : "follow", owner: who?.full || "", due: when.due || "", time: when.time || "" };
   const p = pid || (S.projects.length === 1 ? S.projects[0].id : "");
   if (!p) {
     const guess = guessProjectName(title);
@@ -1684,8 +1717,8 @@ $("tlEvents").checked = tlEvents;
 $("tlEvents").onchange = () => { tlEvents = $("tlEvents").checked; store.set("pd-tlev", tlEvents); renderProject(); };
 $("filters").onclick = (e) => { const b = e.target.closest("[data-f]"); if (b) { filter = b.dataset.f; renderProject(); } };
 const onTasks = (e) => {
-  const pk = e.target.closest("[data-pick]");
-  if (pk) { const s = selOf(curP); s.has(pk.dataset.pick) ? s.delete(pk.dataset.pick) : s.add(pk.dataset.pick); renderProject(); return; }
+  const dn = e.target.closest("[data-done]");
+  if (dn) { toggleDone(dn.dataset.done); return; }
   const dy = e.target.closest("[data-day]");
   if (dy) { const el = $("day-" + dy.dataset.day); if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); el.animate([{ background: "var(--brand-soft)" }, { background: "transparent" }], { duration: 1400 }); } return; }
   const ed = e.target.closest("[data-edit]");
@@ -1703,7 +1736,7 @@ $("notes").oninput = () => {
 $("useNotes").onchange = () => { S.useNotes[curP] = $("useNotes").checked; save(); renderActbar(); };
 $("clearNotes").onclick = () => { if (!S.notes[curP] || confirm("ล้างโน้ตของโครงการนี้?")) { S.notes[curP] = ""; delete S.useNotes[curP]; save(); renderProject(); } };
 $("actClear").onclick = () => { selOf(curP).clear(); renderProject(); };
-$("doSummary").onclick = openSummary;
+$("doSummary").onclick = () => openSummary();
 $("doLine").onclick = () => openLine();
 
 let ph;

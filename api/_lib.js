@@ -17,14 +17,15 @@ export function checkPin(request) {
 export const clip = (s, n) => String(s ?? "").slice(0, n);
 
 const STATUS = {
-  todo: "ต้องทำ", waiting: "รอคำตอบ", decision: "รอตัดสินใจ",
-  proposal: "ข้อเสนอที่กำลังหารือ", confirmed: "ยืนยันแล้ว", done: "เสร็จแล้ว",
+  urgent: "ด่วน (ทำทันที)", follow: "ติดตาม (ต้องทำหรือรอคำตอบ)", info: "แจ้งให้ทราบ (ข้อมูล มติ หรือข้อเสนอ)", done: "เสร็จแล้ว",
+  // older saved data
+  todo: "ติดตาม (ต้องทำหรือรอคำตอบ)", waiting: "ติดตาม (ต้องทำหรือรอคำตอบ)", decision: "ด่วน (ทำทันที)", proposal: "แจ้งให้ทราบ (ข้อมูล มติ หรือข้อเสนอ)", confirmed: "แจ้งให้ทราบ (ข้อมูล มติ หรือข้อเสนอ)",
 };
 /** Clean the task list the page sends; labels the status in Thai for the model. */
 export function cleanTasks(a) {
   return (Array.isArray(a) ? a.slice(0, 80) : []).map((t) => ({
     title: clip(t?.title, 200),
-    status: STATUS[t?.status] || "ต้องทำ",
+    status: STATUS[t?.status] || "ติดตาม (ต้องทำหรือรอคำตอบ)",
     owner: clip(t?.owner, 60),
     due: clip(t?.due, 40),
     detail: clip(t?.detail, 800),
