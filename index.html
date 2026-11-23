@@ -141,6 +141,35 @@ details.fold .list{margin-top:6px}
 .notes textarea{min-height:110px;background:var(--bg)}
 .notes .row{margin-top:8px;justify-content:space-between}
 
+
+/* project timeline: tasks placed on their due dates along one line, today marked */
+.pmode{margin-bottom:12px}
+.tl-opts{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-2px 0 10px;flex-wrap:wrap}
+.tl{position:relative;padding-left:26px}
+.tl::before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:2px;border-radius:2px;background:var(--line)}
+.tl-month{font-family:var(--f-display);font-weight:700;font-size:15px;color:var(--muted);margin:18px 0 8px -26px;padding-left:26px}
+.tl-month:first-child{margin-top:0}
+.tl-day{position:relative;margin:0 0 14px}
+.tl-day::before{content:"";position:absolute;left:-23px;top:7px;width:12px;height:12px;border-radius:50%;background:var(--card);border:2.5px solid var(--muted);box-sizing:border-box}
+.tl-day.late::before{border-color:var(--red);background:var(--red)}
+.tl-day.today::before{left:-25px;top:5px;width:16px;height:16px;border:3px solid var(--brand);background:var(--brand-soft);box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 20%,transparent)}
+.tl-day.past::before{border-color:var(--line)}
+.tl-day.nodate::before{border-style:dashed}
+.tl-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.tl-h b{font-family:var(--f-display);font-size:16px}
+.tl-h span{font-size:13px;color:var(--muted)}
+.tl-day.late .tl-h span{color:var(--red-ink);font-weight:600}
+.tl-day.today .tl-h b{color:var(--brand-ink)}
+.tl-items{display:flex;flex-direction:column;gap:8px}
+.tl-empty{font-size:13.5px;color:var(--muted);padding:2px 0 4px}
+.task.tlc{padding:9px 12px 9px 6px}
+.task.tlc .pick{width:34px;height:34px;margin-top:-3px}
+.task.tlc .tt{font-size:15px}
+.task.tlc .tmeta{margin-top:2px}
+.task.past{opacity:.62}
+.ev{font-size:13px;color:var(--muted);border-left:3px solid var(--line);padding:2px 0 2px 10px;overflow-wrap:anywhere}
+.ev b{color:var(--ink);font-weight:600}
+
 /* action bar above nav */
 .actbar{position:fixed;left:0;right:0;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:29;pointer-events:none;padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
 .actbar-in{max-width:640px;margin:0 auto;pointer-events:auto;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:10px;box-shadow:0 10px 30px rgba(15,34,48,.16)}
@@ -356,7 +385,9 @@ textarea.out{min-height:240px;background:var(--card);font-size:15px}
       <div><div class="eyebrow" id="pDesc"></div><h1 id="pName"></h1></div>
       <button class="icon-btn" id="editProject" aria-label="แก้ไขโครงการ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button>
     </header>
+    <div class="seg pmode" id="pMode" role="group" aria-label="มุมมอง"><button data-m="list">รายการ</button><button data-m="timeline">Timeline</button></div>
     <div class="filters" id="filters" role="group" aria-label="กรองตามสถานะ"></div>
+    <div class="tl-opts" id="tlOpts" hidden><span class="note" id="tlNote"></span><label class="check" style="min-height:32px;font-size:13.5px"><input type="checkbox" id="tlEvents"> แสดงความเคลื่อนไหว</label></div>
     <div class="list" id="taskList"></div>
     <details class="fold" id="doneFold" hidden><summary id="doneSum"></summary><div class="list" id="doneList"></div></details>
 
@@ -594,6 +625,43 @@ function taskCard(t, sel) {
       ${last ? `<div class="tlast">${esc(last)}</div>` : ""}
     </button></div>`;
 }
+let pmode = store.get("pd-pmode", "list");
+let tlEvents = store.get("pd-tlev", false);
+const TH_MONTH_FULL = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+/** Tasks on their due dates (overdue, today, ahead), done work faded, optional change log on the day it happened. */
+function timelineHTML(tasks, sel) {
+  const t0 = today(), days = new Map(), nodate = [];
+  const put = (d, x) => { days.has(d) || days.set(d, { tasks: [], events: [] }); days.get(d)[x.ev ? "events" : "tasks"].push(x); };
+  for (const t of tasks) t.due ? put(t.due, t) : nodate.push(t);
+  if (tlEvents) for (const t of tasks) for (const u of (t.updates || []).slice(-6)) put(u.at.slice(0, 10), { ev: true, t, text: u.text });
+  days.has(t0) || days.set(t0, { tasks: [], events: [] });
+  const keys = [...days.keys()].sort();
+  const openN = tasks.filter((t) => isOpen(t) && t.due).length, lateN = tasks.filter((t) => isOpen(t) && t.status !== "confirmed" && t.due && t.due < t0).length;
+  $("tlNote").textContent = `${openN} งานมีกำหนด${lateN ? ` · เลยกำหนด ${lateN}` : ""}${nodate.filter(isOpen).length ? ` · ไม่มีกำหนด ${nodate.filter(isOpen).length}` : ""}`;
+  let month = "", html = "";
+  for (const d of keys) {
+    const m = d.slice(0, 7);
+    if (m !== month) { month = m; const dd = parseD(d); html += `<div class="tl-month">${TH_MONTH_FULL[dd.getMonth()]} ${dd.getFullYear() + 543}</div>`; }
+    const g = days.get(d), n = daysFrom(d);
+    const pending = g.tasks.filter((t) => isOpen(t) && t.status !== "confirmed");
+    const cls = d === t0 ? "today" : n < 0 && pending.length ? "late" : n < 0 ? "past" : "";
+    const rel = n === 0 ? "วันนี้" : n === 1 ? "พรุ่งนี้" : n === -1 ? "เมื่อวาน" : n < 0 ? (pending.length ? `เลยมา ${-n} วัน` : `${-n} วันก่อน`) : `อีก ${n} วัน`;
+    const items = sortTasks(g.tasks).sort((a, b) => (a.time || "99").localeCompare(b.time || "99"));
+    html += `<div class="tl-day ${cls}"><div class="tl-h"><b>${esc(thDate(d, { long: true }).replace(/^วัน/, ""))}</b><span>${rel}</span></div><div class="tl-items">
+      ${items.map((t) => tlCard(t, sel)).join("")}
+      ${g.events.map((e) => `<div class="ev"><b>${esc(e.t.title)}</b> · ${esc(e.text)}</div>`).join("")}
+      ${!items.length && !g.events.length ? `<div class="tl-empty">ไม่มีงานครบกำหนดวันนี้</div>` : ""}</div></div>`;
+  }
+  if (nodate.length) html += `<div class="tl-month">ยังไม่มีกำหนด</div><div class="tl-day nodate"><div class="tl-h"><span>ใส่วันที่ในงานเพื่อให้ขึ้นบนเส้นเวลา</span></div><div class="tl-items">${sortTasks(nodate).map((t) => tlCard(t, sel)).join("")}</div></div>`;
+  return `<div class="tl">${html}</div>`;
+}
+function tlCard(t, sel) {
+  const faded = t.status === "done";
+  return `<div class="task tlc${sel.has(t.id) ? " sel" : ""}${faded ? " isdone past" : ""}" data-t="${t.id}">
+    <button class="pick" data-pick="${t.id}" aria-label="เลือกงานนี้" aria-pressed="${sel.has(t.id)}"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span></button>
+    <button class="tbody" data-edit="${t.id}"><div class="tt">${esc(t.title)}</div>
+      <div class="tmeta"><span class="tag ${t.status}">${ST[t.status]}</span>${t.time ? `<span class="due">${esc(thTime(t.time))}</span>` : ""}${t.owner ? `<span>${esc(t.owner)}</span>` : ""}</div></button></div>`;
+}
 function renderProject() {
   const p = projOf(curP);
   if (!p) return show("home");
@@ -606,10 +674,15 @@ function renderProject() {
   if (!fs.some((f) => f[0] === filter)) filter = "open";
   $("filters").innerHTML = fs.map(([k, l, n]) => `<button data-f="${k}" aria-pressed="${filter === k}">${l} <b class="num">${n}</b></button>`).join("");
   const shown = sortTasks(filter === "open" ? open : all.filter((t) => t.status === filter));
-  $("taskList").innerHTML = shown.length ? shown.map((t) => taskCard(t, sel)).join("") :
-    `<div class="empty">ยังไม่มีงานในโครงการนี้<br>กดปุ่ม "+ งาน" ด้านล่าง หรือวางโน้ตประชุมไว้ด้านล่างแล้วกดสรุปงานได้เลย</div>`;
+  const tl = pmode === "timeline";
+  document.querySelectorAll("#pMode button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.m === pmode)));
+  $("tlOpts").hidden = !tl;
+  $("taskList").className = tl ? "" : "list";
+  $("taskList").innerHTML = !all.length ? `<div class="empty">ยังไม่มีงานในโครงการนี้<br>กดปุ่ม "+ งาน" ด้านล่าง หรือวางโน้ตประชุมไว้ด้านล่างแล้วกดสรุปงานได้เลย</div>`
+    : tl ? timelineHTML(filter === "open" ? all : shown, sel)
+    : shown.length ? shown.map((t) => taskCard(t, sel)).join("") : `<div class="empty">ไม่มีงานในสถานะนี้</div>`;
   const done = sortTasks(all.filter((t) => t.status === "done"));
-  $("doneFold").hidden = !done.length || filter !== "open";
+  $("doneFold").hidden = tl || !done.length || filter !== "open";
   $("doneSum").textContent = `เสร็จแล้ว ${done.length} งาน`;
   $("doneList").innerHTML = done.map((t) => taskCard(t, sel)).join("");
   const n = S.notes[p.id] || "";
@@ -1423,6 +1496,9 @@ $("editProject").onclick = () => editProject(curP);
 $("fab").onclick = () => editTask(null, view === "project" ? curP : null);
 $("projectList").onclick = (e) => { const b = e.target.closest("[data-p]"); if (b) { curP = b.dataset.p; filter = "open"; show("project"); } };
 $("dueList").onclick = (e) => { const b = e.target.closest("[data-t]"); if (!b) return; const t = S.tasks.find((x) => x.id === b.dataset.t); if (t) { curP = t.projectId; show("project"); editTask(t.id); } };
+$("pMode").onclick = (e) => { const b = e.target.closest("[data-m]"); if (b) { pmode = b.dataset.m; store.set("pd-pmode", pmode); renderProject(); } };
+$("tlEvents").checked = tlEvents;
+$("tlEvents").onchange = () => { tlEvents = $("tlEvents").checked; store.set("pd-tlev", tlEvents); renderProject(); };
 $("filters").onclick = (e) => { const b = e.target.closest("[data-f]"); if (b) { filter = b.dataset.f; renderProject(); } };
 const onTasks = (e) => {
   const pk = e.target.closest("[data-pick]");
