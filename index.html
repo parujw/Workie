@@ -169,6 +169,32 @@ details.fold .list{margin-top:6px}
 .task.past{opacity:.62}
 .ev{font-size:13px;color:var(--muted);border-left:3px solid var(--line);padding:2px 0 2px 10px;overflow-wrap:anywhere}
 .ev b{color:var(--ink);font-weight:600}
+/* milestone line on top of the timeline: weeks, a dashed arrow line, today, and milestone dots */
+.ms{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:12px 0 10px;margin-bottom:16px;box-shadow:var(--shadow)}
+.ms-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:0 14px 4px;flex-wrap:wrap}
+.ms-h b{font-family:var(--f-display);font-size:15px}
+.ms-h span{font-size:12.5px;color:var(--muted)}
+.ms-scroll{overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}
+.ms-in{position:relative;height:184px;margin:0 14px}
+.ms-wk{position:absolute;top:0;height:100%;border-left:1px solid var(--line);font-size:10.5px;color:var(--muted);padding-left:3px;font-variant-numeric:tabular-nums}
+.ms-wk span{position:absolute;top:0;left:3px;white-space:nowrap}
+.ms-mon{position:absolute;top:14px;font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;padding-left:3px}
+.ms-line{position:absolute;left:0;right:0;top:76px;border-top:2px dotted var(--muted);opacity:.7}
+.ms-line::before,.ms-line::after{content:"";position:absolute;top:-6px;width:9px;height:9px;border:solid var(--muted);border-width:0 0 2px 2px}
+.ms-line::before{left:0;transform:rotate(45deg)}
+.ms-line::after{right:0;transform:rotate(-135deg)}
+.ms-today{position:absolute;top:28px;bottom:4px;border-left:2px solid var(--brand);z-index:1}
+.ms-today span{position:absolute;bottom:-4px;left:4px;font-size:11px;font-weight:700;color:var(--brand-ink);white-space:nowrap}
+.ms-dot{position:absolute;top:66px;width:22px;height:22px;margin-left:-11px;border-radius:50%;z-index:2;background:var(--c);border:3px solid var(--card);box-shadow:0 0 0 2px var(--c),0 2px 6px rgba(0,0,0,.15);padding:0}
+.ms-dot.done{--c:var(--muted)}
+.ms-lab{position:absolute;width:110px;margin-left:-55px;text-align:center;font-size:11.5px;line-height:1.3;z-index:2;padding:0;color:var(--ink)}
+.ms-lab b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-lab span{color:var(--muted)}
+.ms-lab.l0{top:92px}
+.ms-lab.l1{top:30px}
+.ms-lab.l2{top:128px}
+.ms-lab.late span{color:var(--red-ink);font-weight:600}
+
 
 /* action bar above nav */
 .actbar{position:fixed;left:0;right:0;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:29;pointer-events:none;padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
@@ -647,13 +673,64 @@ function timelineHTML(tasks, sel) {
     const cls = d === t0 ? "today" : n < 0 && pending.length ? "late" : n < 0 ? "past" : "";
     const rel = n === 0 ? "วันนี้" : n === 1 ? "พรุ่งนี้" : n === -1 ? "เมื่อวาน" : n < 0 ? (pending.length ? `เลยมา ${-n} วัน` : `${-n} วันก่อน`) : `อีก ${n} วัน`;
     const items = sortTasks(g.tasks).sort((a, b) => (a.time || "99").localeCompare(b.time || "99"));
-    html += `<div class="tl-day ${cls}"><div class="tl-h"><b>${esc(thDate(d, { long: true }).replace(/^วัน/, ""))}</b><span>${rel}</span></div><div class="tl-items">
+    html += `<div class="tl-day ${cls}" id="day-${d}"><div class="tl-h"><b>${esc(thDate(d, { long: true }).replace(/^วัน/, ""))}</b><span>${rel}</span></div><div class="tl-items">
       ${items.map((t) => tlCard(t, sel)).join("")}
       ${g.events.map((e) => `<div class="ev"><b>${esc(e.t.title)}</b> · ${esc(e.text)}</div>`).join("")}
       ${!items.length && !g.events.length ? `<div class="tl-empty">ไม่มีงานครบกำหนดวันนี้</div>` : ""}</div></div>`;
   }
   if (nodate.length) html += `<div class="tl-month">ยังไม่มีกำหนด</div><div class="tl-day nodate"><div class="tl-h"><span>ใส่วันที่ในงานเพื่อให้ขึ้นบนเส้นเวลา</span></div><div class="tl-items">${sortTasks(nodate).map((t) => tlCard(t, sel)).join("")}</div></div>`;
-  return `<div class="tl">${html}</div>`;
+  return milestoneHTML(tasks) + `<div class="tl">${html}</div>`;
+}
+/** ISO week number, as in calendar-week Gantt charts. */
+function isoWeek(d) {
+  const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = x.getUTCDay() || 7; x.setUTCDate(x.getUTCDate() + 4 - day);
+  return Math.ceil(((x - Date.UTC(x.getUTCFullYear(), 0, 1)) / 864e5 + 1) / 7);
+}
+const STATUS_COLOR = { todo: "var(--blue)", waiting: "var(--amber)", decision: "var(--red)", proposal: "var(--violet)", confirmed: "var(--brand)", done: "var(--muted)" };
+/** The line at the top: tasks marked as milestones (or every dated task if none are marked) on a week scale. */
+function milestoneHTML(tasks) {
+  const dated = tasks.filter((t) => t.due);
+  const marked = dated.filter((t) => t.milestone);
+  const pts = (marked.length ? marked : dated).slice().sort((a, b) => a.due.localeCompare(b.due) || (a.time || "").localeCompare(b.time || ""));
+  if (!pts.length) return "";
+  const t0 = today();
+  let start = [t0, pts[0].due].sort()[0], end = [t0, pts[pts.length - 1].due].sort()[1];
+  start = addDays(start, -3); end = addDays(end, 4);
+  const span = Math.max(14, daysFrom(end) - daysFrom(start));
+  const avail = Math.max(280, (document.querySelector(".wrap")?.clientWidth || 360) - 60);
+  // One dot per day, at least ~40px apart; labels take one of three rows (below, above, further below) so they don't overlap.
+  const groups = [];
+  for (const t of pts) { const g = groups[groups.length - 1]; if (g && g.due === t.due) g.tasks.push(t); else groups.push({ due: t.due, tasks: [t] }); }
+  let minGap = Infinity;
+  for (let i = 1; i < groups.length; i++) minGap = Math.min(minGap, daysFrom(groups[i].due) - daysFrom(groups[i - 1].due));
+  const ppd = Math.min(Math.max(avail / span, 9, minGap < Infinity ? 40 / minGap : 0), 60); // pixels per day; scroll sideways when long
+  const W = Math.round(span * ppd), x = (d) => Math.round((daysFrom(d) - daysFrom(start)) * ppd);
+  let grid = "";
+  for (let i = 0; i <= span; i++) {
+    const d = addDays(start, i), dd = parseD(d);
+    if (dd.getDay() === 1 && ppd * 7 >= 24) grid += `<div class="ms-wk" style="left:${x(d)}px"><span>W${isoWeek(dd)}</span></div>`;
+    if (dd.getDate() === 1 || i === 0) grid += `<div class="ms-mon" style="left:${x(d)}px">${TH_MON[dd.getMonth()]}</div>`;
+  }
+  const RANK = { decision: 0, waiting: 1, todo: 2, proposal: 3, confirmed: 4, done: 5 };
+  const lanes = [-1e9, -1e9, -1e9]; let dots = "";
+  for (const g of groups) {
+    const lead = g.tasks.slice().sort((a, b) => RANK[a.status] - RANK[b.status])[0];
+    const px = Math.min(Math.max(x(g.due), 8), W - 8);
+    let lane = lanes.findIndex((l) => px - l >= 114);
+    if (lane < 0) lane = lanes.indexOf(Math.min(...lanes));
+    lanes[lane] = px;
+    const late = g.tasks.some((t) => isOpen(t) && t.status !== "confirmed") && g.due < t0;
+    const allDone = g.tasks.every((t) => t.status === "done");
+    const lx = Math.min(Math.max(px, 55), W - 55);
+    const name = `${lead.title}${g.tasks.length > 1 ? ` +${g.tasks.length - 1}` : ""}`;
+    dots += `<button class="ms-dot ${allDone ? "done" : ""}" style="left:${px}px;--c:${late ? "var(--red)" : STATUS_COLOR[lead.status]}" data-day="${g.due}" aria-label="${esc(name)}"></button>
+      <button class="ms-lab l${lane}${late ? " late" : ""}" style="left:${lx}px" data-day="${g.due}"><b>${esc(name)}</b><span>${esc(thDate(g.due))}</span></button>`;
+  }
+  const todayPx = x(t0);
+  return `<div class="ms"><div class="ms-h"><b>${marked.length ? "หมุดหมาย" : "เส้นเวลาโครงการ"}</b><span>${marked.length ? `${marked.length} หมุดหมาย` : "ติ๊ก \"หมุดหมาย\" ในงานเพื่อเลือกเฉพาะจุดสำคัญ"}</span></div>
+    <div class="ms-scroll" id="msScroll" data-today="${todayPx}"><div class="ms-in" style="width:${W}px">${grid}<div class="ms-line"></div>
+    <div class="ms-today" style="left:${todayPx}px"><span>วันนี้</span></div>${dots}</div></div></div>`;
 }
 function tlCard(t, sel) {
   const faded = t.status === "done";
@@ -681,6 +758,7 @@ function renderProject() {
   $("taskList").innerHTML = !all.length ? `<div class="empty">ยังไม่มีงานในโครงการนี้<br>กดปุ่ม "+ งาน" ด้านล่าง หรือวางโน้ตประชุมไว้ด้านล่างแล้วกดสรุปงานได้เลย</div>`
     : tl ? timelineHTML(filter === "open" ? all : shown, sel)
     : shown.length ? shown.map((t) => taskCard(t, sel)).join("") : `<div class="empty">ไม่มีงานในสถานะนี้</div>`;
+  const ms = $("msScroll"); if (ms) ms.scrollLeft = Math.max(0, +ms.dataset.today - ms.clientWidth / 3);
   const done = sortTasks(all.filter((t) => t.status === "done"));
   $("doneFold").hidden = tl || !done.length || filter !== "open";
   $("doneSum").textContent = `เสร็จแล้ว ${done.length} งาน`;
@@ -750,6 +828,7 @@ function editTask(id, pid) {
       <datalist id="peopleList">${[...new Set(S.tasks.map((x) => x.owner).filter(Boolean))].map((o) => `<option value="${esc(o)}">`).join("")}</datalist></div>
     <div class="grid2"><div><label class="lab" for="tDue">ภายในวันที่</label><input type="date" id="tDue" value="${esc(t.due)}"></div>
       <div><label class="lab" for="tTime">เวลา (ถ้ามี)</label><input type="time" id="tTime" value="${esc(t.time)}"></div></div>
+    <label class="check"><input type="checkbox" id="tMs"${t.milestone ? " checked" : ""}> หมุดหมาย (แสดงบนเส้นด้านบนของ Timeline)</label>
     <div><label class="lab" for="tDetail">รายละเอียด / เหตุผล</label><textarea id="tDetail" rows="3" placeholder="เช่น ทีมจะส่งผลิตวันอาทิตย์ เพื่อติดตั้งวันจันทร์">${esc(t.detail)}</textarea></div>
     <div><label class="lab" for="tUpd">อัปเดตล่าสุด (บันทึกเป็นประวัติ ใช้บอกว่าเปลี่ยนจากเดิมอย่างไร)</label><input type="text" id="tUpd" placeholder="เช่น พี่นัทขอแก้สีโลโก้ จะส่งใหม่วันศุกร์"></div>
     ${t.updates?.length ? `<div><span class="lab">ประวัติ</span><div class="hist">${t.updates.slice().reverse().map((u) => `<div><time>${esc(thDate(u.at.slice(0, 10)))}</time>${esc(u.text)}</div>`).join("")}</div></div>` : ""}
@@ -765,7 +844,7 @@ function editTask(id, pid) {
   $("tSave").onclick = () => {
     const title = $("tTitle").value.trim();
     if (!title) { $("tErr").textContent = "ใส่ชื่องานก่อน"; $("tErr").hidden = false; return; }
-    const nu = { title, status, owner: $("tOwner").value.trim(), due: $("tDue").value, time: $("tTime").value, detail: $("tDetail").value.trim(), projectId: $("tProj")?.value || t.projectId };
+    const nu = { title, status, owner: $("tOwner").value.trim(), due: $("tDue").value, time: $("tTime").value, detail: $("tDetail").value.trim(), milestone: $("tMs").checked, projectId: $("tProj")?.value || t.projectId };
     const upd = $("tUpd").value.trim();
     if (id) patchTask(t, nu, upd); else newTask(nu, upd);
     save(); closeSheet(); toast(id ? "บันทึกแล้ว" : "เพิ่มงานแล้ว");
@@ -1503,6 +1582,8 @@ $("filters").onclick = (e) => { const b = e.target.closest("[data-f]"); if (b) {
 const onTasks = (e) => {
   const pk = e.target.closest("[data-pick]");
   if (pk) { const s = selOf(curP); s.has(pk.dataset.pick) ? s.delete(pk.dataset.pick) : s.add(pk.dataset.pick); renderProject(); return; }
+  const dy = e.target.closest("[data-day]");
+  if (dy) { const el = $("day-" + dy.dataset.day); if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); el.animate([{ background: "var(--brand-soft)" }, { background: "transparent" }], { duration: 1400 }); } return; }
   const ed = e.target.closest("[data-edit]");
   if (ed) editTask(ed.dataset.edit);
 };
