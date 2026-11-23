@@ -1,3 +1,0 @@
-# Private workspace — not for indexing.
-User-agent: *
-Disallow: /
